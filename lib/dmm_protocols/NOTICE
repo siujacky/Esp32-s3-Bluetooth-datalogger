@@ -1,0 +1,46 @@
+DMM protocol library
+====================
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+This Arduino-independent C++ library is an adaptation of the protocol and BLE
+transport definitions in dmm-tools by Antoine Cellerier and contributors:
+https://github.com/antoinecellerier/dmm-tools
+
+Pinned upstream revision: 2d4dc507dbd6fa33b05b0241b368572f0ca15745
+Retrieved: 2026-11-09
+
+Adapted source paths under crates/dmm-lib/src:
+  protocol/ut61eplus/{mod.rs,mode.rs,tables/*}
+  protocol/ut171/{mod.rs,parse.rs}
+  protocol/ut181a/{parse.rs,command.rs}
+  protocol/ut80x/mod.rs (UT71 A/B and C/D/E layouts only)
+  protocol/owon/{model.rs,decode.rs,decode15.rs,frame.rs,frame15.rs}
+  protocol/zotek/{frame.rs,glyph.rs,layout.rs}
+  protocol/bm78xbt/{packet.rs,decode.rs,tables.rs,login.rs}
+  protocol/eevblog121gw/{packet.rs,decode.rs,tables.rs}
+  protocol/framing.rs
+  transport/ble/{profile.rs,issc.rs,fff0.rs,owon.rs,brymen.rs,eevblog121gw.rs}
+
+Tests adapt the original projects' packet examples, real golden captures and
+annunciator cases. Their provenance is preserved in the test fixtures and
+compatibility document. Worked examples are labeled as such; they are not
+local hardware captures.
+
+Changes in this port: fixed-size, allocation-free C++ API, model registry,
+output arrays with explicit channels, unit strings paired with values, bounded
+stream buffering, portable host verification, and startup command metadata.
+The library does not include the upstream simulators, GUI, USB transports,
+remote button/control APIs or logging-memory interfaces.
+
+This library and its adaptations are free software: you can redistribute them
+and/or modify them under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+This software is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See COPYING for the GNU General Public License.
+
+Firmware distributions that incorporate this library must retain these notices
+and comply with the GPL, including the corresponding-source requirements.

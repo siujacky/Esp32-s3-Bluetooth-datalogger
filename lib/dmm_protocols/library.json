@@ -1,0 +1,7 @@
+{
+  "name": "dmm_protocols",
+  "version": "1.0.0",
+  "description": "Allocation-free Bluetooth multimeter protocol decoders adapted from dmm-tools",
+  "license": "GPL-3.0-or-later",
+  "build": { "includeDir": ".", "srcDir": "." }
+}

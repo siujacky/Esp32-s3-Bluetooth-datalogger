@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>IndexedDB meter tests</title></head><body>
+<h1>Native IndexedDB integration tests</h1><pre id="results">Running…</pre>
+<script src="../../src/esp32_touch/meter/web/core.js"></script>
+<script>
+(async function () {
+  const messages=[],C=MeterCore;
+  function assert(condition,message){if(!condition)throw new Error(message);}
+  const factory={open:(_name,version)=>indexedDB.open('meter-workbench-native-test',version)};
+  const remove=indexedDB.deleteDatabase('meter-workbench-native-test');
+  await new Promise((resolve,reject)=>{remove.onsuccess=resolve;remove.onerror=()=>reject(remove.error);remove.onblocked=()=>reject(new Error('Close previous test tabs'));});
+  const store=await C.openDatabase(factory);
+  try{
+    const frame={seq:1,kind:'reading',meter:0,channel:0,address:'AA',profile:'ut60bt',packet:1,value:-1.25,numeric:true,text:'-1.25',unit:'V',mode:'DC',modeKey:1,flags:0,uptimeMs:100,timestampMs:1700000000000,sessionId:'real-device-id'};
+    const batch={deviceId:'esp-test',bootId:'boot-one',after:0,nextSeq:3,oldestSeq:1,gap:false,recording:{id:'real-device-id',label:'Supply test'},frames:[frame,{...frame,seq:2,sessionId:''},{seq:3,kind:'event',event:'mark',message:'probe moved',sessionId:'real-device-id',timestampMs:1700000000200}]};
+    const result=await store.commitBatch(batch);assert(result.added===2,'Only tagged reading and marker should commit');
+    let list=await store.listSessions();assert(list.length===1 && list[0].sampleCount===1 && list[0].eventCount===1,'Committed counts must reflect actual saved tagged frames');
+    assert(list[0].label==='Supply test','Keep the device recording label');assert(await store.cursor('esp-test','boot-one')===3,'Commit durable sequence cursor');
+    let data=await store.readSession(list[0].id);assert(data.frames.length===2 && data.frames[0].value===-1.25,'Read back real IndexedDB samples and markers');messages.push('PASS tagged frames, label, marker, numeric value, durable cursor');
+    await store.commitBatch(batch);list=await store.listSessions();assert(list[0].sampleCount===1 && list[0].eventCount===1,'Duplicate backlog must not inflate counters');messages.push('PASS duplicate recovery');
+    await store.commitBatch({...batch,after:3,nextSeq:1,bootId:'boot-two',frames:[frame]});list=await store.listSessions();assert(list[0].sampleCount===2,'A sequence reused after reboot is distinct');
+    await store.commitBatch({...batch,deviceId:'second-device',frames:[frame]});list=await store.listSessions();assert(list.length===2,'Same session tag on another physical device must remain distinct');messages.push('PASS device and boot isolation');
+    const nativeTransaction=store.db.transaction.bind(store.db);
+    store.db.transaction=function(...args){const tx=nativeTransaction(...args);if(args[1]==='readwrite')queueMicrotask(()=>tx.abort());return tx;};
+    let rejected=false;try{await store.commitBatch({...batch,after:3,nextSeq:4,frames:[{...frame,seq:4}]});}catch(_){rejected=true;}finally{store.db.transaction=nativeTransaction;}
+    assert(rejected,'An aborted native transaction must reject');assert(await store.cursor('esp-test','boot-one')===3,'An aborted write must not advance cursor');list=await store.listSessions();assert(list.find(s=>s.deviceId==='esp-test').sampleCount===2,'An aborted write must not inflate saved count');messages.push('PASS native transaction abort, atomic count and cursor rollback');
+    const gapBatch={...batch,after:3,nextSeq:7,oldestSeq:7,gap:true,frames:[{...frame,seq:7}]};await store.commitBatch(gapBatch);await store.commitBatch(gapBatch);data=await store.readSession(C.sessionKey('esp-test','real-device-id'));assert(data.gaps.length===1 && data.gaps[0].missingAtLeast===3,'Persist one explicit gap boundary, not fake samples');assert(data.session.sampleCount===3 && data.session.gapCount===1,'Gap retry must be deduplicated');messages.push('PASS gap persistence and dedupe');
+    const tailBatch={...batch,after:7,nextSeq:20,oldestSeq:20,gap:true,recording:{active:false,id:'real-device-id',label:'Supply test'},frames:[{...frame,seq:20,sessionId:''}]};await store.commitBatch(tailBatch);await store.commitBatch(tailBatch);data=await store.readSession(C.sessionKey('esp-test','real-device-id'));assert(data.gaps.length===2,'An untagged recovery batch must still report a possibly lost recording tail');assert(data.session.gapCount===2 && data.session.incompleteTail===true,'Session UI and JSON export must declare its possibly incomplete tail');assert(data.session.sampleCount===3,'A gap must never invent samples');messages.push('PASS stopped-session missing tail with no tagged recovery frames');
+    const closed={...batch,deviceId:'closed-device',nextSeq:2,frames:[{...frame,sessionId:'closed-session'},{seq:2,kind:'event',event:'recording',message:'Recording stopped',sessionId:'closed-session',timestampMs:1700000000200}]};await store.commitBatch(closed);await store.commitBatch({...closed,after:2,nextSeq:9,oldestSeq:9,gap:true,frames:[{...frame,seq:9,sessionId:''}]});const completed=await store.readSession(C.sessionKey('closed-device','closed-session'));assert(completed.gaps.length===0 && !completed.session.incompleteTail,'A session with a committed stop before the gap must not receive a later unrelated gap');messages.push('PASS completed-session gap isolation');await store.deleteSession(completed.session.id);
+    await store.deleteSession(C.sessionKey('esp-test','real-device-id'));data=await store.readSession(C.sessionKey('esp-test','real-device-id'));assert(!data.session && data.frames.length===0 && data.gaps.length===0,'Explicit local delete must atomically remove session frames and gaps');assert((await store.listSessions()).length===1,'Deleting one device must preserve the other device');messages.push('PASS scoped deletion');
+    document.title='PASS · Native IndexedDB meter tests';document.getElementById('results').textContent=messages.join('\n')+'\nALL NATIVE INDEXEDDB CHECKS PASSED';
+  }finally{store.db.close();}
+})().catch(error=>{document.title='FAIL · Native IndexedDB meter tests';document.getElementById('results').textContent=error.stack;throw error;});
+</script></body></html>

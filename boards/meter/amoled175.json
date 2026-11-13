@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "id": "amoled175",
+  "display": {
+    "backend": "co5300_qspi",
+    "width": 466,
+    "height": 466,
+    "bus": {
+      "cs": 12,
+      "sck": 38,
+      "data0": 4,
+      "data1": 5,
+      "data2": 6,
+      "data3": 7,
+      "dc": -1
+    },
+    "reset": 39,
+    "backlight": -1,
+    "frequency": 40000000,
+    "offset_x": 6,
+    "offset_y": 0
+  },
+  "touch": {
+    "driver": "cst92xx",
+    "sda": 15,
+    "scl": 14,
+    "address": 90,
+    "reset": 40,
+    "irq": 11,
+    "frequency": 400000,
+    "mirror_x": false,
+    "mirror_y": false,
+    "swap_xy": false,
+    "required_pmic_address": 52
+  },
+  "storage": {
+    "backend": "none",
+    "spi_host": 3,
+    "cs": -1,
+    "mosi": -1,
+    "sck": -1,
+    "miso": -1,
+    "frequency": 20000000
+  },
+  "ui": {
+    "reading": {
+      "rotation": 0,
+      "reference_width": 466,
+      "reference_height": 466,
+      "safe_circle": true,
+      "safe_margin": 4,
+      "value": {
+        "baseline": 292,
+        "max_width": 406,
+        "size_x": 4,
+        "size_y": 4
+      },
+      "profile": {
+        "x": 233,
+        "y": 60,
+        "size": 2,
+        "align": 0
+      },
+      "status": {
+        "x": 233,
+        "y": 94,
+        "size": 2,
+        "align": 0
+      },
+      "flags": {
+        "x": 233,
+        "y": 127,
+        "size": 1,
+        "align": 0
+      },
+      "unit": {
+        "x": 233,
+        "y": 326,
+        "size": 5,
+        "align": 0
+      },
+      "slot": {
+        "x": 10,
+        "y": 305,
+        "size": 0,
+        "align": -1
+      },
+      "scope": {
+        "plot": {
+          "x": 54,
+          "y": 122,
+          "w": 358,
+          "h": 250
+        },
+        "value": {
+          "x": 233,
+          "y": 54,
+          "size": 3,
+          "align": 0
+        },
+        "status": {
+          "x": 233,
+          "y": 94,
+          "size": 2,
+          "align": 0
+        },
+        "mode": {
+          "x": 233,
+          "y": 400,
+          "size": 2,
+          "align": 0
+        },
+        "slot": {
+          "x": 233,
+          "y": 305,
+          "size": 0,
+          "align": 0
+        }
+      }
+    },
+    "setup": {
+      "rotation": 0,
+      "reference_width": 466,
+      "reference_height": 466,
+      "safe_circle": true,
+      "safe_margin": 4,
+      "viewport": {
+        "x": 80,
+        "y": 112,
+        "w": 306,
+        "h": 274
+      },
+      "header": {
+        "x": 96,
+        "y": 52,
+        "w": 274,
+        "h": 50
+      },
+      "row": {
+        "x": 80,
+        "width": 306,
+        "height": 70,
+        "step": 84,
+        "font_size": 3,
+        "columns": 1,
+        "column_gap": 0
+      },
+      "info_height": 150,
+      "header_font_size": 3,
+      "footer": {
+        "x": 233,
+        "y": 393,
+        "size": 1,
+        "align": 0
+      },
+      "info": {
+        "state": {
+          "x": 233,
+          "y": 0,
+          "size": 2,
+          "align": 0
+        },
+        "title": {
+          "x": 233,
+          "y": 28,
+          "size": 2,
+          "align": 0
+        },
+        "address": {
+          "x": 233,
+          "y": 58,
+          "size": 1,
+          "align": 0
+        },
+        "model": {
+          "x": 233,
+          "y": 80,
+          "size": 2,
+          "align": 0
+        },
+        "rssi": {
+          "x": 233,
+          "y": 98,
+          "size": 1,
+          "align": 0
+        },
+        "message": {
+          "x": 80,
+          "y": 114,
+          "size": 1,
+          "align": -1
+        },
+        "message_second": {
+          "x": 80,
+          "y": 126,
+          "size": 1,
+          "align": -1
+        }
+      },
+      "network": {
+        "qr": {
+          "x": 106,
+          "y": 116,
+          "w": 254,
+          "h": 254
+        },
+        "heading": {
+          "x": 355,
+          "y": 82,
+          "size": 0,
+          "align": 0
+        },
+        "ssid": {
+          "x": 233,
+          "y": 378,
+          "size": 2,
+          "align": 0
+        },
+        "password_caption": {
+          "x": 233,
+          "y": 400,
+          "size": 1,
+          "align": 0
+        },
+        "password": {
+          "x": 233,
+          "y": 412,
+          "size": 2,
+          "align": 0
+        },
+        "ip_caption": {
+          "x": 355,
+          "y": 235,
+          "size": 0,
+          "align": 0
+        },
+        "ip": {
+          "x": 233,
+          "y": 444,
+          "size": 1,
+          "align": 0
+        },
+        "lan": {
+          "x": 355,
+          "y": 294,
+          "size": 0,
+          "align": 0
+        }
+      }
+    },
+    "advanced": {
+      "rotation": 0,
+      "reference_width": 466,
+      "reference_height": 466,
+      "safe_circle": true,
+      "safe_margin": 4,
+      "viewport": {
+        "x": 80,
+        "y": 104,
+        "w": 306,
+        "h": 278
+      },
+      "back": {
+        "x": 100,
+        "y": 60,
+        "w": 50,
+        "h": 36
+      },
+      "up": {
+        "x": 110,
+        "y": 396,
+        "w": 44,
+        "h": 28
+      },
+      "down": {
+        "x": 312,
+        "y": 396,
+        "w": 44,
+        "h": 28
+      },
+      "header": {
+        "x": 158,
+        "y": 66,
+        "size": 2,
+        "align": -1
+      },
+      "message": {
+        "x": 80,
+        "y": 90,
+        "size": 1,
+        "align": -1
+      },
+      "row": {
+        "step": 64,
+        "gap": 5,
+        "title_size": 2,
+        "detail_size": 1,
+        "info_size": 1,
+        "padding": 8,
+        "title_y": 5,
+        "detail_y": 43
+      },
+      "keyboard": {
+        "preferred_columns": 8,
+        "minimum_key_width": 28,
+        "minimum_key_height": 30,
+        "gap": 2,
+        "caption_height": 10,
+        "text_height": 12,
+        "control_height": 44,
+        "footer_height": 44,
+        "font_size": 2
+      },
+      "home_grid": {
+        "columns": 1,
+        "column_gap": 0,
+        "step": 64,
+        "height": 59
+      }
+    },
+    "overview": {
+      "values": {
+        "x": 80,
+        "y": 104,
+        "w": 306,
+        "h": 278
+      },
+      "scope": {
+        "x": 80,
+        "y": 104,
+        "w": 306,
+        "h": 278
+      },
+      "count_button": {
+        "x": 181,
+        "y": 406,
+        "w": 104,
+        "h": 44
+      },
+      "show_count_button": false,
+      "gap": 8,
+      "slot0_color": 16088,
+      "slot1_color": 34239,
+      "slot2_color": 52479,
+      "slot3_color": 64992
+    }
+  },
+  "theme": {
+    "style": 0,
+    "background": 2113,
+    "surface": 8487,
+    "raised": 8487,
+    "text": 65535,
+    "muted": 42324,
+    "accent": 24364,
+    "warning": 64800,
+    "border": 8487,
+    "radius": 8
+  }
+}

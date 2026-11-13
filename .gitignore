@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+__pycache__/
+*.pyc
+.build/
+dist/
+.superpowers/
+test/web_meter/*-proof/

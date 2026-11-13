@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "id": "jc3248w535",
+  "display": {
+    "backend": "axs15231b_qspi",
+    "width": 320,
+    "height": 480,
+    "bus": {
+      "cs": 45,
+      "sck": 47,
+      "data0": 21,
+      "data1": 48,
+      "data2": 40,
+      "data3": 39,
+      "dc": -1
+    },
+    "reset": -1,
+    "backlight": 1,
+    "frequency": 40000000,
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "touch": {
+    "driver": "axs15231b",
+    "sda": 4,
+    "scl": 8,
+    "address": 59,
+    "reset": -1,
+    "irq": -1,
+    "frequency": 400000,
+    "mirror_x": false,
+    "mirror_y": false,
+    "swap_xy": false,
+    "required_pmic_address": -1
+  },
+  "storage": {
+    "backend": "sd_spi",
+    "spi_host": 3,
+    "cs": 10,
+    "mosi": 11,
+    "sck": 12,
+    "miso": 13,
+    "frequency": 4000000
+  },
+  "ui": {
+    "reading": {
+      "rotation": 1,
+      "reference_width": 480,
+      "reference_height": 320,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "value": {
+        "baseline": 218,
+        "max_width": 448,
+        "size_x": 4,
+        "size_y": 4
+      },
+      "profile": {
+        "x": 16,
+        "y": 12,
+        "size": 2,
+        "align": -1
+      },
+      "status": {
+        "x": 464,
+        "y": 12,
+        "size": 2,
+        "align": 1
+      },
+      "flags": {
+        "x": 240,
+        "y": 56,
+        "size": 1,
+        "align": 0
+      },
+      "unit": {
+        "x": 240,
+        "y": 248,
+        "size": 4,
+        "align": 0
+      },
+      "slot": {
+        "x": 16,
+        "y": 300,
+        "size": 1,
+        "align": -1
+      },
+      "scope": {
+        "plot": {
+          "x": 16,
+          "y": 78,
+          "w": 448,
+          "h": 180
+        },
+        "value": {
+          "x": 16,
+          "y": 16,
+          "size": 2,
+          "align": -1
+        },
+        "status": {
+          "x": 464,
+          "y": 16,
+          "size": 2,
+          "align": 1
+        },
+        "mode": {
+          "x": 240,
+          "y": 53,
+          "size": 1,
+          "align": 0
+        },
+        "slot": {
+          "x": 240,
+          "y": 300,
+          "size": 1,
+          "align": 0
+        }
+      }
+    },
+    "setup": {
+      "rotation": 1,
+      "reference_width": 480,
+      "reference_height": 320,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "viewport": {
+        "x": 12,
+        "y": 66,
+        "w": 456,
+        "h": 210
+      },
+      "header": {
+        "x": 352,
+        "y": 8,
+        "w": 116,
+        "h": 44
+      },
+      "row": {
+        "x": 12,
+        "width": 456,
+        "height": 76,
+        "step": 86,
+        "font_size": 2,
+        "columns": 2,
+        "column_gap": 12
+      },
+      "info_height": 88,
+      "header_font_size": 2,
+      "footer": {
+        "x": 240,
+        "y": 307,
+        "size": 1,
+        "align": 0
+      },
+      "info": {
+        "state": {
+          "x": 452,
+          "y": 10,
+          "size": 1,
+          "align": 1
+        },
+        "title": {
+          "x": 28,
+          "y": 32,
+          "size": 2,
+          "align": -1
+        },
+        "address": {
+          "x": 28,
+          "y": 60,
+          "size": 1,
+          "align": -1
+        },
+        "model": {
+          "x": 452,
+          "y": 60,
+          "size": 1,
+          "align": 1
+        },
+        "rssi": {
+          "x": 452,
+          "y": 42,
+          "size": 0,
+          "align": 1
+        },
+        "message": {
+          "x": 28,
+          "y": 74,
+          "size": 0,
+          "align": -1
+        },
+        "message_second": {
+          "x": 28,
+          "y": 82,
+          "size": 0,
+          "align": -1
+        }
+      },
+      "network": {
+        "qr": {
+          "x": 16,
+          "y": 76,
+          "w": 228,
+          "h": 228
+        },
+        "heading": {
+          "x": 355,
+          "y": 82,
+          "size": 2,
+          "align": 0
+        },
+        "ssid": {
+          "x": 355,
+          "y": 126,
+          "size": 2,
+          "align": 0
+        },
+        "password_caption": {
+          "x": 355,
+          "y": 171,
+          "size": 1,
+          "align": 0
+        },
+        "password": {
+          "x": 355,
+          "y": 191,
+          "size": 2,
+          "align": 0
+        },
+        "ip_caption": {
+          "x": 355,
+          "y": 235,
+          "size": 1,
+          "align": 0
+        },
+        "ip": {
+          "x": 355,
+          "y": 254,
+          "size": 2,
+          "align": 0
+        },
+        "lan": {
+          "x": 355,
+          "y": 294,
+          "size": 1,
+          "align": 0
+        }
+      }
+    },
+    "advanced": {
+      "rotation": 1,
+      "reference_width": 480,
+      "reference_height": 320,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "viewport": {
+        "x": 12,
+        "y": 56,
+        "w": 456,
+        "h": 208
+      },
+      "back": {
+        "x": 12,
+        "y": 6,
+        "w": 76,
+        "h": 44
+      },
+      "up": {
+        "x": 12,
+        "y": 268,
+        "w": 80,
+        "h": 44
+      },
+      "down": {
+        "x": 388,
+        "y": 268,
+        "w": 80,
+        "h": 44
+      },
+      "header": {
+        "x": 100,
+        "y": 12,
+        "size": 2,
+        "align": -1
+      },
+      "message": {
+        "x": 12,
+        "y": 312,
+        "size": 1,
+        "align": -1
+      },
+      "row": {
+        "step": 80,
+        "gap": 8,
+        "title_size": 2,
+        "detail_size": 2,
+        "info_size": 1,
+        "padding": 12,
+        "title_y": 10,
+        "detail_y": 50
+      },
+      "keyboard": {
+        "preferred_columns": 8,
+        "minimum_key_width": 28,
+        "minimum_key_height": 44,
+        "gap": 2,
+        "caption_height": 10,
+        "text_height": 12,
+        "control_height": 44,
+        "footer_height": 44,
+        "font_size": 2
+      },
+      "home_grid": {
+        "columns": 2,
+        "column_gap": 12,
+        "step": 104,
+        "height": 92
+      }
+    },
+    "overview": {
+      "values": {
+        "x": 8,
+        "y": 8,
+        "w": 464,
+        "h": 256
+      },
+      "scope": {
+        "x": 12,
+        "y": 50,
+        "w": 456,
+        "h": 218
+      },
+      "count_button": {
+        "x": 360,
+        "y": 274,
+        "w": 108,
+        "h": 44
+      },
+      "show_count_button": true,
+      "gap": 8,
+      "slot0_color": 16088,
+      "slot1_color": 34239,
+      "slot2_color": 52479,
+      "slot3_color": 64992
+    }
+  },
+  "theme": {
+    "style": 1,
+    "radius": 10,
+    "background": 2212,
+    "surface": 4423,
+    "raised": 6569,
+    "text": 61375,
+    "muted": 40344,
+    "accent": 16088,
+    "warning": 65005,
+    "border": 10763
+  }
+}

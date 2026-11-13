@@ -1,0 +1,6 @@
+{
+  "extends": "jc3248w535.json",
+  "id": "example-jc-cropped",
+  "display": {"width": 300, "backlight": 2},
+  "ui": {"setup": {"row": {"font_size": 2}}}
+}

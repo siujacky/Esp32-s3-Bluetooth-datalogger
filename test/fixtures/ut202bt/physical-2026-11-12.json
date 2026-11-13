@@ -1,0 +1,11 @@
+{
+  "source": "Physical UT202BT captured 2026-11-12 using GetName then StartStream over ISSC BLE UART",
+  "name_reply": "abcd08555432303242540354",
+  "name_wire_length": 8,
+  "name_effective_length": 9,
+  "name_checksum": "0354",
+  "measurements": [
+    "abcd10183220202020302e300000303438037c",
+    "abcd10843020202020203020000030343803c8"
+  ]
+}

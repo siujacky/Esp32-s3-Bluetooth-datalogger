@@ -1,0 +1,4 @@
+Wi-Fi QR rendering uses the MIT licensed Project Nayuki QR Code generator.
+Source: https://github.com/nayuki/QR-Code-generator
+Pinned revision: bcfe1b018cec5f1f91b5705eca5bb4cdd34e9f8d
+Retrieved 2026-11-09. Original MIT notices are retained in qrcodegen.c/.h.

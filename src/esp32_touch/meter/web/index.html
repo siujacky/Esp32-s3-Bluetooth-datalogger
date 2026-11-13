@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10171c">
+<title>Meter Workbench</title>
+<style>/* METER_CSS */</style>
+<style>/* METER_CALC_CSS */</style>
+<style>/* METER_CARD_CSS */</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#live" aria-label="Meter Workbench live view"><span class="brand-mark" aria-hidden="true">∿</span><span>METER<span class="brand-light"> WORKBENCH</span><small>LOCAL INSTRUMENT DASHBOARD</small></span></a>
+  <div class="top-status"><span id="api-state" class="pill pending">Connecting</span><span id="recording-pill" class="pill">Idle</span></div>
+</header>
+<nav class="tabs" aria-label="Dashboard">
+  <button class="tab active" data-panel="live" aria-selected="true">Live</button><button class="tab" data-panel="calculations" aria-selected="false">Calculations</button><button class="tab" data-panel="sessions" aria-selected="false">Sessions</button><button class="tab" data-panel="triggers" aria-selected="false">Triggers</button><button class="tab" data-panel="network" aria-selected="false">Network</button>
+</nav>
+<main>
+<div id="notice" role="status" aria-live="polite" hidden></div>
+<section id="panel-live" class="panel">
+  <div class="section-heading"><div><p class="eyebrow">YOUR INSTRUMENTS</p><h1>Live measurements</h1></div><button id="scan-button" class="button secondary">Scan for meters</button></div>
+  <div id="meter-setup-tabs" class="meter-setup-tabs" role="tablist" aria-label="Meter setup"></div><div id="meter-cards" class="meter-cards" data-tabbed="true"></div>
+  <section id="discovery-panel" class="surface discovery" hidden>
+    <div class="section-heading"><div><h2>Nearby Bluetooth meters</h2><p id="scan-state" class="muted">Select the exact device identity to connect.</p></div><button id="close-discovery" class="button ghost">Close</button></div>
+    <label class="inline-label">Connect to slot <select id="connect-slot"><option value="0">Meter 1</option><option value="1">Meter 2</option><option value="2">Meter 3</option><option value="3">Meter 4</option></select></label>
+    <div class="discovery-controls"><label>Discovered device<select id="discovered-device" aria-describedby="discovery-list connect-device-state"><option value="">No devices found yet</option></select></label><button id="connect-device" type="button" class="button primary" disabled>Connect</button></div>
+    <p id="discovery-list" class="hint"></p><p id="connect-device-state" class="hint" role="status">Select a device to enable Connect.</p>
+    <p class="hint">Choose a model in the slot card first. Profiles marked experimental retain their upstream status. UT60BT and UT202BT have been checked on available meters; four simultaneous links require four physical meters.</p>
+  </section>
+  <section id="instrument" class="surface instrument">
+    <div class="instrument-toolbar"><div><span class="eyebrow" id="focus-name">METER 1</span><span id="focus-state" class="pill">Disconnected</span></div><div class="toolbar-controls"><label>View <select id="instrument-view" aria-label="Instrument view"><option value="values">Values</option><option value="scope">Scope</option></select></label><label>Meters <select id="display-count" aria-label="Meters shown" aria-describedby="display-selection"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label><label id="chart-layout-control">Layout <select id="chart-layout" aria-label="Chart layout"><option value="overlay">Overlay</option><option value="separate">Separate</option></select></label><label id="focus-channel-control">Channel <select id="focus-channel"><option value="0">1</option></select></label><label id="value-layout-control">Values <select id="value-layout" aria-label="Value layout"><option value="solo">Solo</option><option value="equal">Equal rows</option><option value="large-small">1 large + 1 small</option><option value="large-small-small">1 large + 2 small</option><option value="large-large-small">2 large + 1 small</option><option value="grid">Four-meter grid</option></select></label><button id="value-format-button" type="button" class="button ghost">Format</button><button id="fullscreen-button" class="button ghost" aria-pressed="false">Expand</button></div></div>
+    <p id="display-selection" class="hint display-selection">View on a connection card chooses the first meter. Additional meters follow in slot order, wrapping after Meter 4. View preferences stay in this browser.</p>
+    <div id="value-tiles" class="value-tiles" aria-label="Meter value tiles" hidden></div>
+    <p id="values-font-status" class="values-font-status" role="status" hidden></p>
+    <section id="value-format-panel" class="value-format-panel" role="dialog" aria-modal="true" aria-labelledby="value-format-title" hidden>
+      <div class="value-format-heading"><h2 id="value-format-title">Number format</h2><button id="value-format-close" type="button" class="button secondary">Close</button></div>
+      <p class="hint">Settings belong to this browser. Each meter/channel has its own fixed digits and decimal places. The sign and decimal point do not count as digits.</p>
+      <div class="value-format-fields"><label>Meter<select id="value-format-slot"><option value="0">Meter 1</option><option value="1">Meter 2</option><option value="2">Meter 3</option><option value="3">Meter 4</option></select></label><label>Channel<select id="value-format-channel"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option><option value="4">5</option><option value="5">6</option><option value="6">7</option><option value="7">8</option></select></label><label>Total digits<input id="value-format-digits" type="number" min="3" max="8" step="1" value="6"></label><label>Decimal places<input id="value-format-decimals" type="number" min="0" max="6" step="1" value="2"></label><label>Leading positions<select id="value-format-padding"><option value="blank">Spaces</option><option value="zero">Zeros</option></select></label></div>
+      <div id="value-format-preview" class="value-format-preview"></div><p id="value-format-preview-state" class="hint"></p>
+      <div class="button-row"><button id="value-format-save" type="button" class="button primary">Save in browser</button><button id="value-format-device" type="button" class="button secondary">Apply layout and format to device screen</button></div><p id="value-format-result" class="hint" role="status"></p>
+    </section>
+    <div id="single-reading"><div class="reading-line"><div id="big-value" class="big-value">—</div><div class="reading-detail"><span id="big-unit" class="big-unit"></span><span id="big-mode" class="muted">Waiting for a reading</span></div></div>
+    <div class="reading-meta"><span id="sample-age">No samples received</span><span id="sample-rate">Actual meter samples only</span><span id="reading-flags"></span></div></div>
+    <div id="multi-values" class="multi-values" hidden></div>
+    <div class="scope-toolbar"><span class="eyebrow">SCOPE <span id="scope-unit"></span></span><div><label>Window <select id="scope-window"><option value="15000">15 seconds</option><option value="30000" selected>30 seconds</option><option value="60000">60 seconds</option><option value="300000">5 minutes</option></select></label><button id="clear-scope" class="button ghost small">Clear plots</button></div></div>
+    <div id="single-scope"><div id="scope-overlay-legend" class="scope-overlay-legend" hidden></div><div class="scope-wrap"><canvas id="scope" aria-label="Measurement scope, plotted from received samples" role="img"></canvas><div id="scope-empty" class="scope-empty">Your next reading starts the trace.<small>No simulated waveform</small></div></div>
+    <div class="scope-footer"><span id="scope-range">Auto scale · separate trace for each channel</span><span>Mode / unit / profile changes reset only that trace</span></div></div>
+    <div id="scope-lanes" class="scope-lanes" hidden></div>
+  </section>
+  <section class="surface recording-surface">
+    <div><p class="eyebrow">BROWSER RECORDING</p><h2 id="recording-title">Keep a measurement session</h2><p class="muted">Samples are saved in this browser while this dashboard is open.</p></div>
+    <form id="recording-form" class="recording-controls"><label class="grow">Session name / marker<input id="session-label" maxlength="80" placeholder="Bench test · supply voltage" autocomplete="off"></label><button id="record-start" class="button primary" type="submit">Start recording</button><button id="record-mark" class="button secondary" type="button" disabled>Add marker</button><button id="record-stop" class="button danger" type="button" disabled>Stop</button></form>
+    <p id="storage-state" class="storage-status pending" role="status">Opening IndexedDB…</p><p id="feed-state" class="hint">The device keeps a limited RAM backlog. A closed tab, power loss or long connection outage can leave gaps.</p>
+  </section>
+  <details class="surface events"><summary>Device events <span id="event-count" class="muted">0</span></summary><ol id="event-list"></ol></details>
+</section>
+<section id="panel-calculations" class="panel" hidden><div id="calculator-root"></div></section>
+<section id="panel-sessions" class="panel" hidden>
+  <div id="card-storage-root"></div>
+  <div class="section-heading"><div><p class="eyebrow">ON THIS BROWSER</p><h1>Recorded sessions</h1><p class="muted">CSV contains readings and events. JSON includes session and gap metadata.</p></div><button id="refresh-sessions" class="button secondary">Refresh</button></div>
+  <div class="surface storage-note"><p id="session-storage-info">Storage is local to this browser and this dashboard address. Clearing site data removes recordings.</p><div class="button-row"><button id="retry-storage" class="button secondary">Retry storage</button><button id="persist-storage" class="button ghost" hidden>Request persistent storage</button></div></div>
+  <div id="sessions-list" class="session-list"></div>
+</section>
+<section id="panel-triggers" class="panel" hidden>
+  <div class="section-heading"><div><p class="eyebrow">OUTBOUND WEBHOOKS</p><h1>React to a reading</h1><p class="muted">Send a GET or POST when a matching reading crosses a threshold.</p></div><button id="new-rule" class="button secondary">New trigger</button></div>
+  <div class="trigger-grid"><div><div id="webhook-health" class="hint"></div><div id="rules-list" class="list"></div></div>
+  <form id="rule-form" class="surface form-grid">
+    <div class="form-heading"><h2 id="rule-form-title">New trigger</h2><button id="rule-from-focus" class="button ghost small" type="button">Use focused channel</button></div>
+    <input id="rule-id" type="hidden"><label class="checkbox full"><input id="rule-enabled" type="checkbox" checked>Enabled</label>
+    <label>Meter<select id="rule-meter"><option value="0">Meter 1</option><option value="1">Meter 2</option><option value="2">Meter 3</option><option value="3">Meter 4</option></select></label><label>Channel<select id="rule-channel" required><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
+    <label>Unit, exact match<input id="rule-unit" maxlength="11" placeholder="V" required></label><label>Condition<select id="rule-operator"><option value="above">Above</option><option value="below">Below</option></select></label>
+    <label>Threshold<input id="rule-threshold" type="number" step="any" placeholder="12.5" required></label><label>Hysteresis<input id="rule-hysteresis" type="number" step="any" min="0" value="0" required></label>
+    <label>Cooldown (seconds)<input id="rule-cooldown" type="number" min="0" max="86400" step="0.1" value="10" required></label><label>Method<select id="rule-method"><option>POST</option><option>GET</option></select></label>
+    <label class="full">Target URL<input id="rule-url" type="url" maxlength="512" placeholder="https://your-server.example/reading" required></label>
+    <label class="full">Custom headers (JSON object)<textarea id="rule-headers" rows="3" spellcheck="false">{}</textarea></label>
+    <label class="full">POST body template (optional)<textarea id="rule-body" rows="3" maxlength="1024" spellcheck="false" placeholder="Leave empty for the default JSON body"></textarea></label>
+    <p class="hint full">Templates: {{value}}, {{unit}}, {{meter}}, {{timestamp}}. GET adds these as query parameters. A trigger re-arms after leaving its hysteresis region; cooldown limits delivery rate.</p>
+    <label class="full">HTTPS CA certificate (optional PEM)<textarea id="rule-ca" rows="3" maxlength="4096" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea></label><p class="hint full">HTTPS verifies server trust using the device CA bundle or this certificate. Delivery and queue errors appear in the trigger list.</p>
+    <div class="full button-row"><button class="button primary" type="submit">Save trigger</button><button id="cancel-rule" class="button ghost" type="button">Clear form</button><span id="rule-form-status" role="status" class="hint"></span></div>
+  </form></div>
+</section>
+<section id="panel-network" class="panel" hidden>
+  <div class="section-heading"><div><p class="eyebrow">DEVICE CONNECTION</p><h1>Network</h1><p class="muted">The meter access point stays available while the device joins Wi-Fi.</p></div></div>
+  <div class="network-grid"><section class="surface"><p class="eyebrow">ACCESS POINT</p><h2 id="ap-ssid">—</h2><p id="ap-address" class="network-address">—</p><img class="wifi-qr" src="/api/wifi-qr.svg" width="246" height="246" loading="lazy" alt="Scan to join this meter's Wi-Fi"><p class="hint">Scan this QR code with another phone's camera to join the meter Wi-Fi, then open the address above. The same code is on the device's Web / WiFi screen.</p></section><section class="surface"><p class="eyebrow">WI-FI STATION</p><h2 id="sta-state">Not connected</h2><p id="sta-address" class="network-address">—</p><p class="hint">Use this address from devices on the same network.</p></section></div>
+  <form id="wifi-form" class="surface wifi-form"><div class="section-heading"><h2>Join a Wi-Fi network</h2><button id="wifi-scan" class="button secondary" type="button">Scan Wi-Fi</button></div><p id="wifi-scan-state" class="hint" role="status">Scan nearby 2.4 GHz networks, or enter a name manually.</p><div id="wifi-networks" class="wifi-networks"></div><label>Network name (SSID)<input id="wifi-ssid" maxlength="32" autocomplete="off" required></label><label>Password<input id="wifi-password" type="password" maxlength="63" autocomplete="new-password" placeholder="Leave empty for an open network"></label><button id="wifi-join" class="button primary" type="submit">Join network</button><p id="wifi-state" class="hint" role="status">Select a network and enter its password, then press Join network.</p><p id="wifi-connection-state" class="hint" role="status"></p></form>
+  <section id="ntp-card" class="surface ntp-card" aria-labelledby="ntp-heading">
+    <p class="eyebrow">DEVICE CLOCK</p><h2 id="ntp-heading">Date / time</h2>
+    <dl class="ntp-clock"><dt>Current clock source</dt><dd id="ntp-clock-source">Checking device…</dd><dt>Device UTC at last status</dt><dd id="ntp-clock-time">—</dd></dl>
+    <form id="ntp-form" class="ntp-form">
+      <label>NTP service<select id="ntp-enabled" aria-describedby="ntp-status" disabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+      <label>NTP server<select id="ntp-preset" aria-describedby="ntp-status" disabled><option value="pool.ntp.org">pool.ntp.org</option><option value="time.cloudflare.com">time.cloudflare.com</option><option value="time.google.com">time.google.com</option><option value="custom">Custom server…</option></select></label>
+      <label id="ntp-custom-label" class="full" hidden>Custom hostname or IPv4<input id="ntp-server" maxlength="253" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ntp.example.com or 192.168.4.2" aria-describedby="ntp-server-hint ntp-command" disabled></label>
+      <p id="ntp-server-hint" class="hint full">Choose a hostname or IPv4 address without a URL or port. Internet servers need station Wi-Fi. A numeric server on this access point's subnet can work locally. Changes apply only when you press Save settings.</p>
+      <div class="button-row full"><button id="ntp-save" type="submit" class="button primary" disabled>Save settings</button><button id="ntp-sync" type="button" class="button secondary" disabled>Sync NTP now</button><button id="sync-clock" type="button" class="button ghost">Sync timestamp to browser clock</button></div>
+    </form>
+    <p id="ntp-command" class="hint" role="status" aria-live="polite"></p><p id="ntp-status" class="hint" role="status" aria-live="polite">Checking NTP support…</p><p id="ntp-last-sync" class="hint">No successful NTP sync reported.</p><p class="hint">Browser time remains available when NTP cannot reach a server. An accepted request does not confirm saving or an NTP response.</p>
+  </section>
+  <section class="surface screen-settings"><h2>Device screen</h2><label>Orientation<select id="screen-rotation" disabled><option value="0">0° — Portrait</option><option value="1">90° — Landscape</option><option value="2">180° — Portrait flipped</option><option value="3">270° — Landscape flipped</option></select></label><p id="screen-rotation-state" class="hint" role="status">Checking saved orientation…</p><p class="hint">Live screen shortcuts: top edge down opens Screen controls; left edge inward opens M1–M4 setup; right edge inward opens Functions. Swipe upward on values for Layout and Meters shown. Menus scroll by swiping.</p></section><section class="surface device-info"><h2>Device</h2><dl><dt>Identity</dt><dd id="device-id">—</dd><dt>Boot</dt><dd id="boot-id">—</dd><dt>Uptime</dt><dd id="device-uptime">—</dd></dl><div class="button-row"><button id="auto-dim" type="button" class="button secondary" aria-pressed="false" disabled>Auto dim: unavailable</button><button id="touch-calibrate" type="button" class="button secondary" hidden>Calibrate device touchscreen</button></div><p id="auto-dim-state" class="hint" role="status">Auto dim lowers the device screen to 10% after 2 minutes without touch. Touch once to wake; touch again to use controls. Meter connections and logging continue.</p></section>
+</section>
+</main>
+<footer class="page-footer"><span>Meter Workbench · <a href="/readme.html" target="_blank" rel="noopener">README &amp; all functions</a></span><span>Offline assets · local browser storage</span></footer>
+<script>/* METER_CORE */</script>
+<script>/* METER_CALCULATIONS */</script>
+<script>/* METER_CALC_UI */</script>
+<script>/* METER_CARD_UI */</script>
+<script>/* METER_VALUE_FORMAT */</script>
+<script>/* METER_VALUE_TILES */</script>
+<script>/* METER_APP */</script>
+</body>
+</html>

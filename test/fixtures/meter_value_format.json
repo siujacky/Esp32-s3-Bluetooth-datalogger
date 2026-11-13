@@ -1,0 +1,302 @@
+[
+  {
+    "name": "blank default",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "   12.34",
+    "decimalIndex": 5,
+    "value": 12.34
+  },
+  {
+    "name": "zero padded",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "zero"
+    },
+    "state": "numeric",
+    "cells": " 0012.34",
+    "decimalIndex": 5,
+    "value": 12.34
+  },
+  {
+    "name": "negative blank",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "  -12.34",
+    "decimalIndex": 5,
+    "value": -12.34
+  },
+  {
+    "name": "negative zero padded",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "zero"
+    },
+    "state": "numeric",
+    "cells": "-0012.34",
+    "decimalIndex": 5,
+    "value": -12.34
+  },
+  {
+    "name": "maximum integer negative",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "-1234.56",
+    "decimalIndex": 5,
+    "value": -1234.56
+  },
+  {
+    "name": "zero",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "    0.00",
+    "decimalIndex": 5,
+    "value": 0
+  },
+  {
+    "name": "negative rounds to zero",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "    0.00",
+    "decimalIndex": 5,
+    "value": -0.004
+  },
+  {
+    "name": "half positive",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "    1.01",
+    "decimalIndex": 5,
+    "value": 1.005
+  },
+  {
+    "name": "half negative",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "   -1.01",
+    "decimalIndex": 5,
+    "value": -1.005
+  },
+  {
+    "name": "carry",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "   10.00",
+    "decimalIndex": 5,
+    "value": 9.995
+  },
+  {
+    "name": "before overflow",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": " 9999.99",
+    "decimalIndex": 5,
+    "value": 9999.994
+  },
+  {
+    "name": "rounding overflow",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "overflow",
+    "cells": "OVR",
+    "decimalIndex": 255,
+    "value": 9999.995
+  },
+  {
+    "name": "negative overflow",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "overflow",
+    "cells": "OVR",
+    "decimalIndex": 255,
+    "value": -9999.995
+  },
+  {
+    "name": "huge finite",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "overflow",
+    "cells": "OVR",
+    "decimalIndex": 255,
+    "value": 1e+308
+  },
+  {
+    "name": "no decimals",
+    "format": {
+      "digits": 3,
+      "decimals": 0,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "  12",
+    "decimalIndex": 255,
+    "value": 12
+  },
+  {
+    "name": "eight digits",
+    "format": {
+      "digits": 8,
+      "decimals": 0,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": " 99999999",
+    "decimalIndex": 255,
+    "value": 99999999
+  },
+  {
+    "name": "six decimals",
+    "format": {
+      "digits": 8,
+      "decimals": 6,
+      "padding": "blank"
+    },
+    "state": "numeric",
+    "cells": "  0.000001",
+    "decimalIndex": 3,
+    "value": 1e-06
+  },
+  {
+    "name": "missing",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "unavailable",
+    "cells": "--",
+    "decimalIndex": 255,
+    "kind": "missing"
+  },
+  {
+    "name": "nan",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "kind": "nan"
+  },
+  {
+    "name": "infinity",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "kind": "infinity"
+  },
+  {
+    "name": "bad digits low",
+    "format": {
+      "digits": 2,
+      "decimals": 0,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "value": 1
+  },
+  {
+    "name": "bad digits high",
+    "format": {
+      "digits": 9,
+      "decimals": 0,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "value": 1
+  },
+  {
+    "name": "bad decimals",
+    "format": {
+      "digits": 6,
+      "decimals": 6,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "value": 1
+  },
+  {
+    "name": "decimals too many",
+    "format": {
+      "digits": 8,
+      "decimals": 7,
+      "padding": "blank"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "value": 1
+  },
+  {
+    "name": "bad padding",
+    "format": {
+      "digits": 6,
+      "decimals": 2,
+      "padding": "bad"
+    },
+    "state": "invalid",
+    "cells": "ERR",
+    "decimalIndex": 255,
+    "value": 1
+  }
+]

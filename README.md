@@ -42,6 +42,9 @@ Use the corresponding `jc3248w535-v0.1.0.zip`, `amoled175-v0.1.0.zip` or `lcd147
 The supplied release builds assume **16 MB flash and 8 MB OPI PSRAM**. Confirm your board variant and package requirements before installation.
 
 The new 3.49-inch targets have separate [build and installation instructions](docs/WAVESHARE_LCD349.md).
+Download their [V1 package](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/download/v0.2.0/lcd349_v1-v0.2.0.zip)
+or [V2 package](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/download/v0.2.0/lcd349_v2-v0.2.0.zip)
+from [release v0.2.0](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.0).
 They are not included in the older v0.1.0 release. Choose V2 for a PCB marked
 **Rev1.1** or a case marked **V2**. RTC time, IMU measurements and optional
 automatic rotation are integrated; physical board qualification is pending.

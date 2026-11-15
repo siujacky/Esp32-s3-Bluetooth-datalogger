@@ -4,6 +4,8 @@ Meter Workbench includes dedicated builds for both revisions, with display,
 touch, TF logging, PCF85063 RTC and QMI8658 accelerometer/gyroscope support.
 The matching B and EN enclosure/battery variants use their PCB revision's build.
 These are new builds and are not part of release v0.1.0.
+Download the matching package from [release v0.2.0](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.0)
+and follow its included `INSTALL.md`.
 
 ## Select the revision
 

@@ -1,5 +1,5 @@
 #include "panel.h"
-#if !defined(UT_METER_AMOLED) && !defined(UT_METER_JC3248)
+#if !defined(UT_METER_AMOLED) && !defined(UT_METER_JC3248) && !defined(UT_METER_LCD349)
 #include <SPI.h>
 #include <Wire.h>
 #ifdef METER_BOARD_CONFIGURED

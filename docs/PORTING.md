@@ -104,6 +104,7 @@ enabled and NimBLE is configured for four connections/bonds. Check
 | [`jc3248w535.json`](../boards/meter/jc3248w535.json) / `ut_meter_jc3248w535` | Guition JC3248W535; backend cites F1ATB demo `bd5d87ee` and Guition YAML `737d0c14`. | `axs15231b_qspi` / `axs15231b` | 320×480; 0,0 | 1 / 1 / 1: 480×320 |
 | [`amoled175.json`](../boards/meter/amoled175.json) / `ut_meter_amoled175` | Waveshare ESP32-S3-Touch-AMOLED-1.75, explicitly **not 1.75C**; backend cites official `01_HelloWorld` and `10_Touch_CST9217` examples. | `co5300_qspi` / `cst92xx` (CST9217 on this board) | 466×466; 6,0 | 0 / 0 / 0: 466×466 circle |
 | [`lcd147.json`](../boards/meter/lcd147.json) / `ut_meter_lcd147` | Waveshare ESP32-S3-Touch-LCD-1.47; backend cites official `03_lvgl_arduino_v8` demo downloaded 2026-10-10. | `jd9853_spi` / `axs5106l` | 172×320; 34,0 | 1 / 0 / 0: 320×172 reading, 172×320 setup/functions |
+| [`lcd349_v1.json`](../boards/meter/lcd349_v1.json), [`lcd349_v2.json`](../boards/meter/lcd349_v2.json) / `ut_meter_lcd349_v1`, `ut_meter_lcd349_v2` | Waveshare ESP32-S3-Touch-LCD-3.49, exact revision; [wiring and peripherals](WAVESHARE_LCD349.md). | `axs15231b_349_qspi` / `axs15231b_349` | 172×640; 0,0 | 1 / 0 / 0: 640×172 reading, 172×640 setup/functions |
 
 The JSON files do not record PCB revision numbers. These are exact model/source
 references, not a claim that every revision of each product has identical
@@ -208,7 +209,8 @@ or hexadecimal numeric literals; `0x3B` in this manual is decimal `59` in JSON.
 | `theme` | Style 0 (legacy) or 1 (workbench), RGB565 palette integers 0–65535 and radius 0–24. |
 | `display` | Supported backend, native dimensions, bus pins, optional reset/backlight, clock and GRAM offsets. |
 | `touch` | The supported matching driver, bus/address/clock, optional pins, supported axis transforms and optional required PMIC presence check. |
-| `storage` | `none` or `sd_spi` on independent SPI3, pins and clock. |
+| `storage` | `none`, `sd_spi` on independent SPI3, or `sdmmc_1bit` using `clk`, `cmd`, `d0`. |
+| `devices` | Optional auxiliary bus and TCA9554/PCF85063/QMI8658 fields for the 3.49 backend; see its [board guide](WAVESHARE_LCD349.md). |
 | `ui.reading` | Reference canvas, baseline orientation, values, labels, flags, units and scope geometry. |
 | `ui.setup` | Reference canvas, header, viewport, row/grid geometry, labels, information area and Wi-Fi QR/text. |
 | `ui.advanced` | Reference canvas, rows/cards, header, keyboard and compatibility navigation rectangles. |
@@ -400,8 +402,10 @@ board or different MCU is not converted by editing `display.width` or an ID.
 Storage is optional and independent: `sd_spi` is SPI3 (`HSPI` in this Arduino
 build), while the display owns its SPI2/QSPI path. The current backend does not
 offer a JSON option to share the display bus or use arbitrary SPI hosts. When
-disabled, its writer/download worker is compiled out. New SDMMC, shared-bus or
-power-control requirements need storage/backend work, not invented JSON fields.
+disabled, its writer/download worker is compiled out. `sdmmc_1bit` is implemented
+for the 3.49 board with explicit `clk`, `cmd`, `d0` and frequency fields; SPI card
+pins remain `-1`. Shared display/card SPI buses are not implemented. The 3.49
+backend also owns a separate auxiliary I2C bus for power controls, RTC and IMU.
 
 ## Verification in stages
 

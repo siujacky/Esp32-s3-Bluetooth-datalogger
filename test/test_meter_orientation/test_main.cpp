@@ -27,6 +27,10 @@ static void strict_setting_keeps_failed_saves_and_pending_requests_distinct(){
     s.load(255,true);assert(s.rotation()==1&&!s.saved());
     s.load(2,false);assert(s.rotation()==2&&!s.saved());
     for(unsigned r=0;r<4;++r){assert(s.request(r));assert(s.consume(next)&&next==r);s.markSaved(true);}
+    // A manual request may arrive after the display loop checked pending but
+    // before it applies a queued IMU result. A transient update must retain it.
+    assert(s.request(2));s.applyTransient(3);assert(s.rotation()==3&&!s.saved());
+    assert(s.consume(next)&&next==2);
 }
 static void all_rotations_resolve_to_pixels_and_keep_geometry_readable(){
     const Map base=configuredMap();

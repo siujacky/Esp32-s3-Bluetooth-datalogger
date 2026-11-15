@@ -2,6 +2,7 @@
 #include <meter_limits.h>
 #include "meter_ntp.h"
 #include "meter_ntp_json.h"
+#include "meter_board_devices.h"
 #include <limits>
 #include "meter_http_body.h"
 #include <wifi_qr.h>
@@ -123,6 +124,7 @@ bool applyClock(uint64_t unixMs,uint8_t source){
     portENTER_CRITICAL(&g_feedLock);const bool keepNtp=g_clockSource==2&&source!=2;portEXIT_CRITICAL(&g_feedLock);
     bool ok=keepNtp;
     if(!keepNtp){timeval value={static_cast<time_t>(unixMs/1000),static_cast<suseconds_t>((unixMs%1000)*1000)};ok=settimeofday(&value,nullptr)==0;if(ok){const int64_t offset=int64_t(unixMs)-int64_t(nowMs());portENTER_CRITICAL(&g_feedLock);g_epochOffset=offset;g_timeSynced=true;g_clockSource=source;portEXIT_CRITICAL(&g_feedLock);}}
+    if(ok&&!keepNtp&&source!=3)meter_board::syncRtc(unixMs);
     xSemaphoreGive(g_clockMutex);return ok;
 }
 void ntpTimeAccepted(uint64_t unixMs){applyClock(unixMs,2);}
@@ -344,7 +346,8 @@ void routeStatus() {
 #endif
     PsramDocument card;if(!deserializeJson(card,meter_storage::statusJson()))d["storage"]=card.as<JsonVariantConst>();
     uint8_t clockSource;portENTER_CRITICAL(&g_feedLock);clockSource=g_clockSource;portEXIT_CRITICAL(&g_feedLock);
-    auto clock=d["clock"].to<JsonObject>();clock["source"]=clockSource==2?"ntp":clockSource==1?"browser":"none";clock["synced"]=synced;const auto utc=timestamp(nowMs());if(utc)clock["unixMs"]=utc;else clock["unixMs"]=nullptr;
+    auto clock=d["clock"].to<JsonObject>();clock["source"]=clockSource==2?"ntp":clockSource==1?"browser":clockSource==3?"rtc":"none";clock["synced"]=synced;const auto utc=timestamp(nowMs());if(utc)clock["unixMs"]=utc;else clock["unixMs"]=nullptr;
+    meter_board::writeStatus(d["boardDevices"].to<JsonObject>());
     ntpJson(d["ntp"].to<JsonObject>());
     if(g_server.arg("compact")=="1"){for(JsonObject meter:d["meters"].as<JsonArray>())meter.remove("readings");d["display"]["values"].remove("formats");}
     d["latestSeq"]=latest;d["oldestSeq"]=meter_rules::feedCursor(latest,g_capacity,latest).oldest;d["timeSynced"]=synced;
@@ -872,6 +875,7 @@ bool begin(Provider &provider) {
     g_netMutex=xSemaphoreCreateMutex();g_ruleMutex=xSemaphoreCreateMutex();g_clockMutex=xSemaphoreCreateMutex();
     g_samples=xQueueCreate(kSampleDepth,sizeof(Sample));g_jobs=xQueueCreate(kDeliveryDepth,sizeof(Job*));g_wifiCommands=xQueueCreate(1,sizeof(WifiCommand));
     if(!g_frames||!g_netMutex||!g_ruleMutex||!g_clockMutex||!g_samples||!g_jobs||!g_wifiCommands)return false;
+    const uint64_t rtcTime=meter_board::rtcUnixMs();if(rtcTime)applyClock(rtcTime,3);
     for(unsigned i=0;i<g_capacity;i++)new(&g_frames[i]) Frame;
     char id[17],boot[17];snprintf(id,sizeof(id),"%012llX",static_cast<unsigned long long>(ESP.getEfuseMac()&0xFFFFFFFFFFFFULL));
     snprintf(boot,sizeof(boot),"%08lX%08lX",static_cast<unsigned long>(esp_random()),static_cast<unsigned long>(esp_random()));

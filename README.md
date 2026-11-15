@@ -33,11 +33,18 @@ Firmware images are specific to the display, touch controller and wiring. An ESP
 | Guition **JC3248W535** | AXS15231B QSPI, 320×480 panel / 480×320 landscape; AXS15231B touch | Supported by this mapping | `ut_meter_jc3248w535` |
 | Waveshare **ESP32-S3-Touch-AMOLED-1.75** | CO5300 QSPI, 466×466 round; CST92xx touch | Unsupported by this mapping | `ut_meter_amoled175` |
 | **1.47-inch LCD mapping** | JD9853 SPI, 172×320; AXS5106L touch; match the [pin map](boards/meter/lcd147.json) | Unsupported by this mapping | `ut_meter_lcd147` |
+| Waveshare **ESP32-S3-Touch-LCD-3.49 V1** | AXS15231B QSPI, 172×640; revision-specific touch axes; PCF85063 RTC and QMI8658 IMU | One-bit SDMMC | `ut_meter_lcd349_v1` |
+| Waveshare **ESP32-S3-Touch-LCD-3.49 V2 / Rev1.1** | Same panel, RTC and IMU; expander reset/backlight-enable and GPIO42 backlight | One-bit SDMMC | `ut_meter_lcd349_v2` |
 | Custom mapped board | Existing supported display/touch backends with a validated board JSON | Depends on mapping | `ut_meter_mapped` |
 
 Use the corresponding `jc3248w535-v0.1.0.zip`, `amoled175-v0.1.0.zip` or `lcd147-v0.1.0.zip` release package. A custom mapped board needs its own build. See [Porting to another board](docs/PORTING.md) and the detailed [mapping reference](docs/meter-board-mapping.md).
 
 The supplied release builds assume **16 MB flash and 8 MB OPI PSRAM**. Confirm your board variant and package requirements before installation.
+
+The new 3.49-inch targets have separate [build and installation instructions](docs/WAVESHARE_LCD349.md).
+They are not included in the older v0.1.0 release. Choose V2 for a PCB marked
+**Rev1.1** or a case marked **V2**. RTC time, IMU measurements and optional
+automatic rotation are integrated; physical board qualification is pending.
 
 **Fresh install and upgrade are different operations.** A fresh install uses the package's full installation procedure, including bootloader/partition data. An app-only upgrade is appropriate only for an already compatible installation and preserves its partition table and NVS settings when flashed as instructed. Follow the package's INSTALL.md for the exact files, offsets and command. A standalone application `.bin` is not a complete fresh-install image. Preserve a backup before replacing existing firmware.
 
@@ -71,6 +78,8 @@ Select the environment matching your board:
 ```powershell
 pio run -e ut_meter_amoled175
 pio run -e ut_meter_lcd147
+pio run -e ut_meter_lcd349_v1
+pio run -e ut_meter_lcd349_v2
 ```
 
 Build output is under `.pio/build/<environment>/`. A build does not flash hardware. For a custom mapping, follow [PORTING.md](docs/PORTING.md) before using `ut_meter_mapped`. Use the release package INSTALL.md for installation and upgrade instructions.

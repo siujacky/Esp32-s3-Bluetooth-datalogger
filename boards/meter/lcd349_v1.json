@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "id": "lcd349_v1",
+  "display": {
+    "backend": "axs15231b_349_qspi",
+    "width": 172,
+    "height": 640,
+    "bus": {
+      "cs": 9,
+      "sck": 10,
+      "data0": 11,
+      "data1": 12,
+      "data2": 13,
+      "data3": 14,
+      "dc": -1
+    },
+    "reset": 21,
+    "backlight": 8,
+    "frequency": 40000000,
+    "offset_x": 0,
+    "offset_y": 0
+  },
+  "touch": {
+    "driver": "axs15231b_349",
+    "sda": 17,
+    "scl": 18,
+    "address": 59,
+    "reset": -1,
+    "irq": -1,
+    "frequency": 400000,
+    "mirror_x": false,
+    "mirror_y": false,
+    "swap_xy": false,
+    "required_pmic_address": -1
+  },
+  "storage": {
+    "backend": "sdmmc_1bit",
+    "spi_host": 3,
+    "cs": -1,
+    "mosi": -1,
+    "sck": -1,
+    "miso": -1,
+    "frequency": 20000000,
+    "clk": 41,
+    "cmd": 39,
+    "d0": 40
+  },
+  "ui": {
+    "reading": {
+      "rotation": 1,
+      "reference_width": 640,
+      "reference_height": 172,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "value": {
+        "baseline": 130,
+        "max_width": 612,
+        "size_x": 3,
+        "size_y": 3
+      },
+      "profile": {
+        "x": 16,
+        "y": 5,
+        "size": 1,
+        "align": -1
+      },
+      "status": {
+        "x": 624,
+        "y": 4,
+        "size": 2,
+        "align": 1
+      },
+      "flags": {
+        "x": 320,
+        "y": 16,
+        "size": 1,
+        "align": 0
+      },
+      "unit": {
+        "x": 320,
+        "y": 141,
+        "size": 3,
+        "align": 0
+      },
+      "slot": {
+        "x": 20,
+        "y": 305,
+        "size": 0,
+        "align": -1
+      },
+      "scope": {
+        "plot": {
+          "x": 8,
+          "y": 25,
+          "w": 624,
+          "h": 132
+        },
+        "value": {
+          "x": 16,
+          "y": 4,
+          "size": 2,
+          "align": -1
+        },
+        "status": {
+          "x": 624,
+          "y": 4,
+          "size": 2,
+          "align": 1
+        },
+        "mode": {
+          "x": 320,
+          "y": 160,
+          "size": 1,
+          "align": 0
+        },
+        "slot": {
+          "x": 320,
+          "y": 305,
+          "size": 0,
+          "align": 0
+        }
+      }
+    },
+    "setup": {
+      "rotation": 0,
+      "reference_width": 172,
+      "reference_height": 640,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "viewport": {
+        "x": 8,
+        "y": 58,
+        "w": 156,
+        "h": 562
+      },
+      "header": {
+        "x": 5,
+        "y": 5,
+        "w": 162,
+        "h": 46
+      },
+      "row": {
+        "x": 8,
+        "width": 156,
+        "height": 64,
+        "step": 76,
+        "font_size": 2,
+        "columns": 1,
+        "column_gap": 0
+      },
+      "info_height": 150,
+      "header_font_size": 2,
+      "footer": {
+        "x": 86,
+        "y": 627,
+        "size": 1,
+        "align": 0
+      },
+      "info": {
+        "state": {
+          "x": 86,
+          "y": 0,
+          "size": 1,
+          "align": 0
+        },
+        "title": {
+          "x": 86,
+          "y": 28,
+          "size": 2,
+          "align": 0
+        },
+        "address": {
+          "x": 86,
+          "y": 58,
+          "size": 1,
+          "align": 0
+        },
+        "model": {
+          "x": 86,
+          "y": 80,
+          "size": 1,
+          "align": 0
+        },
+        "rssi": {
+          "x": 86,
+          "y": 98,
+          "size": 1,
+          "align": 0
+        },
+        "message": {
+          "x": 8,
+          "y": 114,
+          "size": 1,
+          "align": -1
+        },
+        "message_second": {
+          "x": 8,
+          "y": 126,
+          "size": 1,
+          "align": -1
+        }
+      },
+      "network": {
+        "qr": {
+          "x": 4,
+          "y": 60,
+          "w": 164,
+          "h": 164
+        },
+        "heading": {
+          "x": 355,
+          "y": 82,
+          "size": 0,
+          "align": 0
+        },
+        "ssid": {
+          "x": 86,
+          "y": 262,
+          "size": 2,
+          "align": 0
+        },
+        "password_caption": {
+          "x": 86,
+          "y": 320,
+          "size": 1,
+          "align": 0
+        },
+        "password": {
+          "x": 86,
+          "y": 340,
+          "size": 2,
+          "align": 0
+        },
+        "ip_caption": {
+          "x": 355,
+          "y": 235,
+          "size": 0,
+          "align": 0
+        },
+        "ip": {
+          "x": 86,
+          "y": 396,
+          "size": 1,
+          "align": 0
+        },
+        "lan": {
+          "x": 86,
+          "y": 460,
+          "size": 1,
+          "align": 0
+        }
+      }
+    },
+    "advanced": {
+      "rotation": 0,
+      "reference_width": 172,
+      "reference_height": 640,
+      "safe_circle": false,
+      "safe_margin": 0,
+      "viewport": {
+        "x": 6,
+        "y": 54,
+        "w": 160,
+        "h": 548
+      },
+      "back": {
+        "x": 6,
+        "y": 5,
+        "w": 50,
+        "h": 36
+      },
+      "up": {
+        "x": 6,
+        "y": 604,
+        "w": 44,
+        "h": 28
+      },
+      "down": {
+        "x": 122,
+        "y": 604,
+        "w": 44,
+        "h": 28
+      },
+      "header": {
+        "x": 64,
+        "y": 11,
+        "size": 1,
+        "align": -1
+      },
+      "message": {
+        "x": 6,
+        "y": 632,
+        "size": 1,
+        "align": -1
+      },
+      "row": {
+        "step": 64,
+        "gap": 5,
+        "title_size": 2,
+        "detail_size": 1,
+        "info_size": 1,
+        "padding": 8,
+        "title_y": 5,
+        "detail_y": 43
+      },
+      "keyboard": {
+        "preferred_columns": 4,
+        "minimum_key_width": 28,
+        "minimum_key_height": 24,
+        "gap": 2,
+        "caption_height": 10,
+        "text_height": 24,
+        "control_height": 30,
+        "footer_height": 30,
+        "font_size": 1
+      },
+      "home_grid": {
+        "columns": 1,
+        "column_gap": 0,
+        "step": 64,
+        "height": 59
+      }
+    },
+    "overview": {
+      "values": {
+        "x": 6,
+        "y": 4,
+        "w": 628,
+        "h": 164
+      },
+      "scope": {
+        "x": 6,
+        "y": 32,
+        "w": 628,
+        "h": 96
+      },
+      "count_button": {
+        "x": 560,
+        "y": 130,
+        "w": 70,
+        "h": 40
+      },
+      "show_count_button": false,
+      "gap": 4,
+      "slot0_color": 16088,
+      "slot1_color": 34239,
+      "slot2_color": 52479,
+      "slot3_color": 64992
+    }
+  },
+  "theme": {
+    "style": 0,
+    "background": 2113,
+    "surface": 8487,
+    "raised": 8487,
+    "text": 65535,
+    "muted": 42324,
+    "accent": 24364,
+    "warning": 64800,
+    "border": 8487,
+    "radius": 8
+  },
+  "devices": {
+    "sda": 47,
+    "scl": 48,
+    "frequency": 400000,
+    "expander_address": 32,
+    "rtc_address": 81,
+    "imu_address": 107,
+    "lcd_reset": -1,
+    "backlight_enable": -1,
+    "power_enable": 6
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "lcd349_v1.json",
+  "id": "lcd349_v2",
+  "display": {
+    "reset": -1,
+    "backlight": 42
+  },
+  "devices": {
+    "lcd_reset": 5,
+    "backlight_enable": 1
+  }
+}

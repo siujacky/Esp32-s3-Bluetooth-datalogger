@@ -8,6 +8,8 @@ def run(*args):return subprocess.check_output(args,cwd=ROOT,text=True).strip()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version',default='v0.1.0')
+    parser.add_argument('--boards',nargs='+',choices=('jc3248w535','amoled175','lcd147','lcd349_v1','lcd349_v2'),
+                        default=['jc3248w535','amoled175','lcd147','lcd349_v1','lcd349_v2'])
     parser.add_argument('--esptool',type=Path,default=Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/tool-esptoolpy/esptool.py')
     args=parser.parse_args();version=args.version
     if not version.startswith('v') or any(c not in 'v0123456789.-' for c in version):raise SystemExit('Use a version such as v0.1.0')
@@ -20,7 +22,7 @@ def main():
     provenance=importlib.util.module_from_spec(spec);spec.loader.exec_module(provenance)
     expected_inputs=provenance.inputs(ROOT)
     builds={};deliveries=[]
-    for board in ('jc3248w535','amoled175','lcd147'):
+    for board in args.boards:
         build=ROOT/'.pio/build'/('ut_meter_'+board);app=build/'firmware.bin'
         assert app.is_file(),'Missing build: '+board
         manifest=build/'release-inputs.json'
@@ -38,13 +40,19 @@ def main():
         factory=(folder/'factory.bin').read_bytes()
         for offset,name in ((0,'bootloader.bin'),(0x8000,'partitions.bin'),(0xe000,'boot_app0.bin'),(0x10000,'app.bin')):
             blob=(folder/name).read_bytes();assert factory[offset:offset+len(blob)]==blob,name
-        info=dict(board=board,source_commit=commit,version=version,app_bytes=app.stat().st_size,app_sha256=sha(app),factory_sha256=sha(folder/'factory.bin'),app_offset='0x10000',factory_offset='0x0',flash='16MB',psram='8MB OPI',validation='SDK build passed; this release image was not flashed during documentation publication',hardware_note='JC hardware exercised on earlier matching application code; physical edge confirmation pending' if board=='jc3248w535' else 'This board target is build-verified; no current physical board test')
+        info=dict(board=board,source_commit=commit,version=version,app_bytes=app.stat().st_size,app_sha256=sha(app),factory_sha256=sha(folder/'factory.bin'),app_offset='0x10000',factory_offset='0x0',flash='16MB',psram='8MB OPI',validation='SDK build passed; packaged image was not flashed',hardware_note='JC hardware exercised on earlier matching application code; physical edge confirmation pending' if board=='jc3248w535' else 'Build and host-test evidence only; physical board qualification pending')
         (folder/'BUILDINFO.json').write_text(json.dumps(info,indent=2));builds[board]=info
         install=f'''# {board} — {version}
 
 Use only with the exact matching board/controller/pins in `meter_board_config.h`.
 These builds require ESP32-S3, 16MB flash and 8MB OPI PSRAM. A USB chip name alone
 does not identify a display board. See the repository hardware table before use.
+
+For lcd349_v1/lcd349_v2, match the physical PCB revision: V2 has Rev1.1 on the
+PCB or V2 on its QC label. Reset and backlight pins differ. RTC/IMU integration
+and one-bit SDMMC are included; physical LCD/touch, RTC retention, IMU mounting
+axes and card reliability remain unverified. See docs/WAVESHARE_LCD349.md in
+the source archive. Older v0.1.0 release packages do not include these targets.
 
 ## Fresh installation
 

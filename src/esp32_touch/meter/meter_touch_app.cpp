@@ -29,6 +29,7 @@
 #include <utility>
 #include <meter_selection.h>
 #include "meter_ntp.h"
+#include "meter_board_devices.h"
 
 namespace meter_touch {
 namespace {
@@ -43,7 +44,7 @@ enum Action {NONE=0,NETWORK,RECORDING,CARD,RULES,CALCULATIONS,EVENTS,DIAGNOSTICS
     CALC_SETTINGS,CALC_START,CALC_PAUSE,CALC_RESET,CALC_WEB,REFRESH,CLOCK_EDIT,CLOCK_SET,SHOW_WEB,SHOW_SESSIONS,SHOW_SUMMARIES,
     CONFIRM_INPUT,CONFIRM_EXECUTE,KEY_LEFT,KEY_RIGHT,KEY_SPACE,KEY_LF,KEY_PREVIOUS,KEY_NEXT,KEY_BACKSPACE,KEY_DONE,
     SCOPE_MENU,SCOPE_METER,SCOPE_CHANNEL,SCOPE_WINDOW,SCOPE_CLEAR,SCOPE_SHOW,README_QR,RULE_USE_UNIT,FILE_PREVIOUS,FILE_NEXT,TOUCH_CALIBRATE,DISPLAY_COUNT,CHART_LAYOUT,AUTO_DIM,
-    VALUES_MENU,FORMAT_SLOT,FORMAT_CHANNEL,FORMAT_DIGITS,FORMAT_DECIMALS,FORMAT_PADDING,FORMAT_SAVE,VALUE_SHOW,VALUE_LAYOUT,BT_MENU,BT_SLOT,BT_DEVICE,BT_PROFILE,BT_SCAN,BT_CONNECT,BT_DISCONNECT,NTP_MENU,NTP_ENABLED,NTP_SERVER,NTP_SAVE,NTP_SYNC,SCREEN_ROTATION,ALL_FUNCTIONS};
+    VALUES_MENU,FORMAT_SLOT,FORMAT_CHANNEL,FORMAT_DIGITS,FORMAT_DECIMALS,FORMAT_PADDING,FORMAT_SAVE,VALUE_SHOW,VALUE_LAYOUT,BT_MENU,BT_SLOT,BT_DEVICE,BT_PROFILE,BT_SCAN,BT_CONNECT,BT_DISCONNECT,NTP_MENU,NTP_ENABLED,NTP_SERVER,NTP_SAVE,NTP_SYNC,SCREEN_ROTATION,ALL_FUNCTIONS,IMU_ROTATION};
 class JsonAllocator:public ArduinoJson::Allocator {
 public:
     void *allocate(size_t n) override {void *p=heap_caps_malloc(n,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);return p?p:heap_caps_malloc(n,MALLOC_CAP_8BIT);}
@@ -481,6 +482,7 @@ void execute(int action){
     case FORMAT_PADDING:editedFormat.padding=editedFormat.padding==meter_ui::Padding::Blank?meter_ui::Padding::Zero:meter_ui::Padding::Blank;formatDirty=true;break;
     case FORMAT_SAVE:if(meter_values::requestFormat(formatSlot,formatChannel,editedFormat)){formatDirty=false;rememberFormatDraft();message("Number format requested; check saved status");}else message("Number format save unavailable");break;
     case AUTO_DIM:meter_display::requestAutoDim(!meter_display::autoDim());message("Auto dim setting updated");break;
+    case IMU_ROTATION:meter_board::setAutoRotation(!meter_board::autoRotation());message("IMU rotation setting requested");break;
     case SCOPE_METER:{unsigned slot=(meter_ble::activeSlot()+1)%meter_ble::MAX_CONNECTIONS;meter_ble::focus(slot);if(scopeChannels[slot]>=0)meter_ble::selectChannel(slot,scopeChannels[slot]);break;}
     case SCOPE_CHANNEL:{const auto view=meter_ble::view();int channel=scopeChannels[view.activeSlot]>=0?scopeChannels[view.activeSlot]:view.reading.channel;scopeChannels[view.activeSlot]=(channel+1)%8;meter_ble::selectChannel(view.activeSlot,scopeChannels[view.activeSlot]);break;}
     case SCOPE_WINDOW:{const unsigned values[]={5,10,30,60,120,300};unsigned i=0;while(i<6&&values[i]!=scopeSeconds)++i;scopeSeconds=values[(i+1)%6];break;}
@@ -537,6 +539,9 @@ void buildRows(){
     if(notice.startsWith("FAILED:"))info(notice,WARN);
     switch(page){
     case Page::Screen:
+#ifdef UT_METER_LCD349
+        add("IMU AUTO ROTATION",String(meter_board::autoRotation()?"ON":"OFF")+" / tap to switch",IMU_ROTATION);
+#endif
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" (tap to switch)",AUTO_DIM);
         add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::busy());
         add("SHOW VALUES","Full-screen meter readings",VALUE_SHOW);
@@ -662,6 +667,12 @@ void buildRows(){
         {auto list=eventsDoc["events"].as<JsonArrayConst>();for(int i=int(list.size())-1;i>=0;--i){auto event=list[i];info(asText(event["event"])+" / #"+String(event["seq"].as<unsigned long long>())+" / HTTP "+String(event["code"]|0)+"\n"+asText(event["message"]));}}
         break;
     case Page::Diagnostics:
+#ifdef UT_METER_LCD349
+        add("IMU AUTO ROTATION",String(meter_board::autoRotation()?"ON":"OFF")+" / tap to switch",IMU_ROTATION);
+        {const auto dev=statusDoc["boardDevices"].as<JsonObjectConst>();
+        info(String("RTC PCF85063 UTC / ")+((dev["rtc"]["valid"]|false)?"VALID":"UNSET / ERROR")+"\n"+asText(dev["rtc"]["unixMs"])+"\n"+asText(dev["rtc"]["error"]));
+        info(String("IMU QMI8658 / ")+((dev["imu"]["sampleValid"]|false)?"LIVE":"UNAVAILABLE")+"\nAccel g: "+asText(dev["imu"]["accelerationG"][0])+", "+asText(dev["imu"]["accelerationG"][1])+", "+asText(dev["imu"]["accelerationG"][2])+"\nGyro deg/s: "+asText(dev["imu"]["angularVelocityDps"][0])+", "+asText(dev["imu"]["angularVelocityDps"][1])+", "+asText(dev["imu"]["angularVelocityDps"][2])+"\n"+asText(dev["imu"]["error"]));}
+#endif
         add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" / "+(meter_display::lightSaved()?"saved":"RAM only"),AUTO_DIM);
 #ifdef UT_METER_JC3248

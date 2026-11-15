@@ -21,6 +21,7 @@
 #include <meter_orientation.h>
 #include "meter_value_settings.h"
 #include "meter_value_view.h"
+#include "meter_board_devices.h"
 #include <meter_numerals.h>
 
 static DeskPanel panel;
@@ -801,6 +802,7 @@ void setup() {
     meter_calibration::begin(panel);meter_display::begin();meter_values::begin();meter_ble::begin();meter_web::begin(meter_api::provider());meter_touch::begin();applyOrientation();draw();status();
 }
 void loop() {
+    static bool physicalContact=false;
     static String line;
     while(Serial.available()) {
         char c=char(Serial.read());
@@ -812,6 +814,7 @@ void loop() {
     if(meter_calibration::tick(panel))drawAt=0;
     if(meter_calibration::takeContactReset()){touchGesture=ut_meter::TouchGesture();meter_touch::resetContact();suppressTouchUntilUp=true;}
     if(panel.touch(x,y,down)){
+        physicalContact=down;
         if(down&&meter_display::touch(millis())){
             touchGesture=ut_meter::TouchGesture();meter_touch::resetContact();suppressTouchUntilUp=true;
         }
@@ -842,6 +845,10 @@ void loop() {
         meter_web::publish(sample);
     }
     meter_web::tick();
+    const bool motionAllowed=!physicalContact&&!meter_calibration::busy()&&!meter_touch::isOpen();
+    meter_board::tick(motionAllowed);
+    unsigned motionRotation=4;
+    if(motionAllowed&&meter_board::takeRotation(motionRotation))meter_display::requestMotionRotation(motionRotation);
     meter_touch::tick();
     if(meter_display::tick(!meter_calibration::busy())){applyOrientation();drawAt=0;}
     if(meter_values::tick())drawAt=0;

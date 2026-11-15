@@ -20,6 +20,7 @@ _validation_spec.loader.exec_module(_validation_module)
 MAPPING_DIR = Path(__file__).resolve().parents[2] / "boards" / "meter"
 MAX_INHERITANCE_DEPTH = 16
 BACKENDS = {"axs15231b_qspi": ("axs15231b", "UT_METER_JC3248"),
+            "axs15231b_349_qspi": ("axs15231b_349", "UT_METER_LCD349"),
             "co5300_qspi": ("cst92xx", "UT_METER_AMOLED"),
             "jd9853_spi": ("axs5106l", None)}
 # GPIO22-25 do not exist; GPIO26-37 belong to this N16R8 board's flash/PSRAM;
@@ -38,7 +39,9 @@ SCHEMA = {
               "mirror_x": None, "mirror_y": None, "swap_xy": None,
               "required_pmic_address": None},
     "storage": {"backend": None, "spi_host": None, "cs": None, "mosi": None,
-                "sck": None, "miso": None, "frequency": None},
+                "sck": None, "miso": None, "frequency": None,
+                "clk": None, "cmd": None, "d0": None},
+    "devices": {key:None for key in ('sda','scl','frequency','expander_address','rtc_address','imu_address','lcd_reset','backlight_enable','power_enable')},
     "ui": {name: {"rotation": None, "reference_width": None,
                   "reference_height": None} for name in ("reading", "setup", "advanced")},
 }
@@ -155,6 +158,9 @@ def validate_profile(profile):
     # Version-1 profiles from before the visual refresh remain valid. Defaults
     # are explicit in the resolved export/hash and never select a new style.
     if isinstance(profile,dict):
+        profile.setdefault('devices',dict(sda=-1,scl=-1,frequency=400000,expander_address=-1,rtc_address=-1,imu_address=-1,lcd_reset=-1,backlight_enable=-1,power_enable=-1))
+        if isinstance(profile.get('storage'),dict):
+            for key in ('clk','cmd','d0'):profile['storage'].setdefault(key,-1)
         profile.setdefault('theme',dict(DEFAULT_THEME))
         ui=profile.get('ui')
         if isinstance(ui,dict):
@@ -195,6 +201,8 @@ def validate_profile(profile):
     if backend == "axs15231b_qspi" and (display["width"] + display["offset_x"] > 360 or
                                          display["height"] + display["offset_y"] > 640):
         raise ValueError("AXS15231B dimensions and offsets exceed 360x640 driver range")
+    if backend == 'axs15231b_349_qspi' and (display['width'],display['height'],display['offset_x'],display['offset_y']) != (172,640,0,0):
+        raise ValueError('Waveshare 3.49 backend requires native 172x640 with zero offsets')
     if backend == "jd9853_spi" and (display["width"] > 172 or display["height"] > 320):
         raise ValueError("JD9853 backend currently supports only the established <=172x320 window")
     if backend == "jd9853_spi" and (display["offset_x"] + display["width"] > 206 or display["offset_y"] + display["height"] > 320):
@@ -232,18 +240,40 @@ def validate_profile(profile):
         raise ValueError("PMIC and touch must have different I2C addresses")
     for name in ("mirror_x", "mirror_y", "swap_xy"):
         _boolean(touch[name], "touch." + name)
-    if touch["driver"] == "axs15231b" and (touch["mirror_x"] or touch["mirror_y"] or touch["swap_xy"]):
+    if touch["driver"] in ("axs15231b", "axs15231b_349") and (touch["mirror_x"] or touch["mirror_y"] or touch["swap_xy"]):
         raise ValueError("AXS15231B touch uses its rotation/calibration transform; mirror/swap must be false")
     if touch["driver"] == "cst92xx" and touch["irq"] == -1:
         raise ValueError("CST92xx touch requires a configured irq")
-    if storage["backend"] not in ("none", "sd_spi"):
+    if storage["backend"] not in ("none", "sd_spi", "sdmmc_1bit"):
         raise ValueError("unsupported storage.backend")
     _integer(storage["spi_host"], 3, 3, "storage.spi_host")
     _integer(storage["frequency"], 1000000, 40000000, "storage.frequency")
     for name in ("cs", "mosi", "sck", "miso"):
-        pin(storage[name], "storage." + name, storage["backend"] == "none")
-        if storage["backend"] == "none" and storage[name] != -1:
+        pin(storage[name], "storage." + name, storage["backend"] != "sd_spi")
+        if storage["backend"] != "sd_spi" and storage[name] != -1:
             raise ValueError("disabled storage pins must be -1")
+    for name in ('clk','cmd','d0'):
+        pin(storage[name],'storage.'+name,storage['backend']!='sdmmc_1bit')
+        if storage['backend']!='sdmmc_1bit' and storage[name]!=-1:raise ValueError('unused SDMMC pins must be -1')
+    devices=profile['devices'];enabled=backend=='axs15231b_349_qspi'
+    _integer(devices['frequency'],10000,400000,'devices.frequency')
+    for name in ('sda','scl'):
+        pin(devices[name],'devices.'+name,not enabled)
+        if not enabled and devices[name]!=-1:raise ValueError('devices bus requires Waveshare 3.49 backend')
+    addresses=[]
+    for name in ('expander_address','rtc_address','imu_address'):
+        _integer(devices[name],0x08 if enabled else -1,0x77 if enabled else -1,'devices.'+name)
+        if enabled:
+            if devices[name] in addresses:raise ValueError('devices I2C address conflict')
+            addresses.append(devices[name])
+    channels=[]
+    for name in ('lcd_reset','backlight_enable','power_enable'):
+        _integer(devices[name],-1,7 if enabled else -1,'devices.'+name)
+        if devices[name]>=0:
+            if devices[name] in channels:raise ValueError('devices expander pin conflict')
+            channels.append(devices[name])
+    if enabled and devices['power_enable']<0:raise ValueError('3.49 requires expander power-enable pin')
+    if enabled and ((display['reset']>=0)==(devices['lcd_reset']>=0)):raise ValueError('3.49 needs exactly one GPIO or expander LCD reset')
     validate_ui(profile["ui"], display, theme['style'])
     return profile
 
@@ -349,7 +379,8 @@ def render_header(profile):
     leaves(profile, ())
     compact = json.dumps(profile, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     digest = hashlib.sha256(compact.encode("utf-8")).hexdigest()
-    lines.append("#define METER_STORAGE_ENABLED " + str(int(profile["storage"]["backend"] == "sd_spi")))
+    lines.append("#define METER_STORAGE_ENABLED " + str(int(profile["storage"]["backend"] != "none")))
+    lines.append("#define METER_STORAGE_SDMMC " + str(int(profile["storage"]["backend"] == "sdmmc_1bit")))
     lines.append("#define METER_MAPPING_SHA256 " + json.dumps(digest))
     lines.append("#define METER_BOARD_MAP_JSON " + json.dumps(compact))
     lines.append('#define METER_TOUCH_CALIBRATION_NAMESPACE ' + json.dumps(calibration_namespace(profile)))

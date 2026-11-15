@@ -4,6 +4,9 @@
 #include <meter_idle_dim.h>
 #include <Preferences.h>
 #include <Arduino.h>
+#ifdef UT_METER_LCD349
+#include "meter_board_devices.h"
+#endif
 namespace meter_display {
 namespace {Preferences preferences;bool opened=false;meter_ui::DisplayCount state;meter_ui::OverlaySetting layout,dimSetting;meter_ui::OrientationSetting orientation{METER_UI_READING_ROTATION};meter_ui::IdleDimmer dimmer;std::atomic<unsigned> light{55};}
 void begin(){opened=preferences.begin("meter-view",false);state.load(opened?preferences.getUChar("count",1):1,opened);layout.load(opened?preferences.getUChar("overlay",1):1,opened);dimSetting.load(opened?preferences.getUChar("auto-dim",1):1,opened);orientation.load(opened?preferences.getUChar("rotation",255):255,opened&&preferences.isKey("rotation"));dimmer.configure(autoDim(),millis());}
@@ -11,7 +14,15 @@ unsigned count(){return state.count();}
 bool saved(){return state.saved()&&layout.saved();}
 bool requestCount(unsigned value){return state.request(value);}
 unsigned rotation(){return orientation.rotation();}
-bool requestRotation(unsigned value){return orientation.request(value);}
+namespace {std::atomic<unsigned> motionRotation{4};}
+bool requestRotation(unsigned value){
+    if(!meter_ui::validRotation(value))return false;
+#ifdef UT_METER_LCD349
+    meter_board::setAutoRotation(false);
+#endif
+    motionRotation.store(4);return orientation.request(value);
+}
+bool requestMotionRotation(unsigned value){if(!meter_ui::validRotation(value))return false;motionRotation.store(value);return true;}
 bool rotationSaved(){return orientation.saved();}
 bool overlay(){return layout.overlay();}
 void requestOverlay(bool value){layout.request(value);}
@@ -27,6 +38,12 @@ bool tick(bool allowRotation){
         if(!opened)opened=preferences.begin("meter-view",false);
         const bool ok=opened&&preferences.putUChar("rotation",next)==1&&preferences.getUChar("rotation",255)==next;
         orientation.markSaved(ok);changed=true;Serial.printf("display_rotation=%u saved=%u\n",next,ok);
+        motionRotation.store(4);
+    }else if(allowRotation){
+        const unsigned motion=motionRotation.exchange(4);
+        if(meter_ui::validRotation(motion)&&motion!=orientation.rotation()){
+            orientation.applyTransient(motion);changed=true;Serial.printf("display_rotation=%u source=imu saved=0\n",motion);
+        }
     }
     if(state.consume(next)){
         if(!opened)opened=preferences.begin("meter-view",false);

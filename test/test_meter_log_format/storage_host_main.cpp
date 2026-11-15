@@ -1,4 +1,10 @@
 #ifdef METER_STORAGE_HOST_TEST
+#if METER_STORAGE_SDMMC
+#include "SD_MMC.h"
+FakeSDMMC SD_MMC;
+int FakeSDMMC::clk=-1,FakeSDMMC::cmd=-1,FakeSDMMC::d0=-1,FakeSDMMC::frequency=0;
+bool FakeSDMMC::oneBit=false;
+#endif
 #include "host/fake_runtime.h"
 #include "host/ff.h"
 #include "meter_storage.h"
@@ -48,7 +54,11 @@ static void test_remount_and_start_event_boundary() {
     fakeCard.present.store(true);
     {std::lock_guard<std::mutex> guard(fakeCard.mutex);fakeCard.add("/meter-logs","",true);fakeCard.add(path(9),"preserved\r\n");fakeCard.add("/meter-logs/private.txt","untouched");}
     remount();CHECK(status()["mounted"].as<bool>());CHECK(!fakeCard.formatRequested);
+#if METER_STORAGE_SDMMC
+    CHECK(FakeSDMMC::clk==41&&FakeSDMMC::cmd==39&&FakeSDMMC::d0==40&&FakeSDMMC::oneBit&&FakeSDMMC::frequency==20000);
+#else
     CHECK(SPIClass::bus==HSPI&&SPIClass::clock==12&&SPIClass::miso==13&&SPIClass::mosi==11&&SPIClass::cs==10);
+#endif
     JsonDocument files;CHECK(!deserializeJson(files,filesJson()));CHECK(files["files"].size()==1);
     CHECK(files["files"][0]["name"].as<std::string>()=="meter-A1B2C3D4E5F60708-9.csv");
     CHECK(append(record(2,4)));CHECK(append(record(2,5,false,true)));drained();CHECK(data(2).empty());
@@ -212,7 +222,12 @@ static void test_format_idle_guards_and_replay_safe_success() {
     CHECK(status()["formatResult"].as<std::string>()=="success");CHECK(status()["mounted"].as<bool>());
     CHECK(status()["formatOperationId"].as<std::string>()=="format-explicit-success-01");
     CHECK(fakeCard.formatCalls.load()==before+1);
-    CHECK(fakeCard.lastFormatDrive=="1:"&&fakeCard.lastDetachedDrive=="1:");
+    CHECK(fakeCard.lastFormatDrive=="1:");
+#if METER_STORAGE_SDMMC
+    CHECK(fakeCard.lastDetachedDrive.empty()); // Fresh raw disk has no mounted logical volume.
+#else
+    CHECK(fakeCard.lastDetachedDrive=="1:");
+#endif
     CHECK(fakeCard.lastFormatFlags==(FM_FAT|FM_FAT32));CHECK(!fakeCard.formatRequested);
     CHECK(fakeCard.flashMarker=="internal-flash-preserved");CHECK(fakeCard.registeredDrive==0xff);
     JsonDocument files;CHECK(!deserializeJson(files,filesJson()));CHECK(files["files"].size()==0);

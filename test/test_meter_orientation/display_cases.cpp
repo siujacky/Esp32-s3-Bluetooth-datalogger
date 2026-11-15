@@ -22,6 +22,12 @@ int main(){
     beginOK()=true;assert(requestRotation(3));assert(tick());assert(rotationSaved());begin();assert(rotation()==3&&rotationSaved());
     bytes().erase("rotation");begin();assert(rotation()==METER_UI_READING_ROTATION&&!rotationSaved());
     assert(requestRotation(METER_UI_READING_ROTATION));assert(tick());assert(rotationSaved()&&bytes()["rotation"]==METER_UI_READING_ROTATION);
+    const unsigned manualWrites=writes();
+    assert(!requestMotionRotation(4));assert(requestMotionRotation((rotation()+1)%4));
+    assert(!tick(false));assert(writes()==manualWrites);
+    assert(tick(true));assert(!rotationSaved());assert(writes()==manualWrites);
+    const unsigned automatic=rotation();assert(requestMotionRotation(automatic));assert(!tick());assert(writes()==manualWrites);
+    assert(requestRotation(automatic));assert(tick());assert(rotationSaved()&&writes()==manualWrites+1);
     puts("meter_display rotation: namespace/default/strict inputs/restart/write failure/readback failure/retry passed");
 }
 #endif

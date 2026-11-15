@@ -29,7 +29,6 @@ def main():
     profiles = json.loads(args.sections.read_text()) if args.sections else {
         path.stem: compiler.load_profile(path)["ui"]
         for path in (repo / "boards/meter").glob("*.json")
-        if "extends" not in json.loads(path.read_text())
     }
     if len(profiles) < 3:
         raise RuntimeError("Expected the three canonical complete UI maps")
@@ -48,6 +47,7 @@ def main():
                             "-DMETER_UI_STANDALONE", "-DMETER_UI_TEST_MAPPED", f"-DMETER_UI_TEST_WIDTH={width}",
                             f"-DMETER_UI_TEST_HEIGHT={height}", "-include", str(header),
                             "-I", str(repo / "lib/meter_ui/src"),
+                            "-I", str(repo / "lib/ut_meter"),
                             str(pathlib.Path(__file__).with_name("test_main.cpp")),
                             "-o", str(binary)], check=True)
             subprocess.run([str(binary)], check=True)

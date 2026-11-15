@@ -3,8 +3,16 @@
 #if (defined(METER_STORAGE_ENABLED) && METER_STORAGE_ENABLED) || (!defined(METER_BOARD_CONFIGURED) && defined(UT_METER_JC3248))
 #include <meter_log_format.h>
 #include <meter_log_io.h>
+#if METER_STORAGE_SDMMC
+#include <SD_MMC.h>
+#include <driver/sdmmc_host.h>
+#include <sdmmc_cmd.h>
+#include <diskio_impl.h>
+#include <diskio_sdmmc.h>
+#else
 #include <SD.h>
 #include <sd_diskio.h>
+#endif
 #include <ff.h>
 #include <SPI.h>
 #include <freertos/FreeRTOS.h>
@@ -20,6 +28,11 @@
 
 namespace meter_storage {
 namespace {
+#if METER_STORAGE_SDMMC
+auto &cardFS=SD_MMC;
+#else
+auto &cardFS=SD;
+#endif
 constexpr unsigned kQueueDepth=32,kFileLimit=128,kChunkBytes=1024,kControlSlots=8;
 #ifdef METER_BOARD_CONFIGURED
 constexpr int kCardCs=METER_STORAGE_CS,kCardMosi=METER_STORAGE_MOSI,kCardClock=METER_STORAGE_SCK,kCardMiso=METER_STORAGE_MISO;
@@ -45,7 +58,9 @@ portMUX_TYPE g_stateLock=portMUX_INITIALIZER_UNLOCKED;
 QueueHandle_t g_queue=nullptr;
 SemaphoreHandle_t g_fsMutex=nullptr;
 TaskHandle_t g_task=nullptr;
+#if !METER_STORAGE_SDMMC
 SPIClass g_spi(HSPI); // SPI3: the display owns SPI2/QSPI.
+#endif
 FILE *g_writer=nullptr;
 File g_download;
 FileEntry g_files[kFileLimit];
@@ -56,7 +71,9 @@ uint64_t g_writerBytes=0;
 char g_activeSession[40]={};
 struct SessionControl {Record stop;bool used=false,haveStop=false;};
 SessionControl g_controls[kControlSlots];
+#if !METER_STORAGE_SDMMC
 bool g_spiBegun=false;
+#endif
 std::atomic<bool> g_started{false},g_inputActive{false},g_remounting{false},g_remountRequested{false};
 std::atomic<bool> g_formatting{false},g_formatRequested{false};
 std::atomic<uint32_t> g_dropped{0},g_written{0},g_buffered{0},g_pending{0},g_downloads{0},g_closeToken{0};
@@ -119,7 +136,7 @@ void updateEntry(const char *name,uint64_t bytes,bool active) {
     textCopy(g_files[index].name,name);g_files[index].bytes=bytes;g_files[index].active=active;
 }
 void refreshSpace() {
-    const uint64_t card=SD.cardSize(),total=SD.totalBytes(),used=SD.usedBytes();
+    const uint64_t card=cardFS.cardSize(),total=cardFS.totalBytes(),used=cardFS.usedBytes();
     portENTER_CRITICAL(&g_stateLock);
     g_state.cardBytes=card;g_state.totalBytes=total;g_state.usedBytes=used;
     portEXIT_CRITICAL(&g_stateLock);g_lastSpaceCheck=millis();
@@ -159,7 +176,7 @@ void closeReader() {
 void scanFiles() {
     g_fileCount=0;
     portENTER_CRITICAL(&g_stateLock);g_state.listTruncated=false;portEXIT_CRITICAL(&g_stateLock);
-    File dir=SD.open(kDirectory,FILE_READ);
+    File dir=cardFS.open(kDirectory,FILE_READ);
     if(!dir||!dir.isDirectory()) {errorState("Unable to read /meter-logs directory");return;}
     unsigned scanned=0;const uint32_t start=millis();
     for(;;) {
@@ -179,18 +196,26 @@ void scanFiles() {
 }
 void mountCard() {
     closeWriter();closeReader();
-    SD.end();
+    cardFS.end();
+#if !METER_STORAGE_SDMMC
     if(g_spiBegun)g_spi.end();
     g_spi.begin(kCardClock,kCardMiso,kCardMosi,kCardCs);g_spiBegun=true;
+#endif
     portENTER_CRITICAL(&g_stateLock);
     g_state.mounted=false;g_state.cardBytes=0;g_state.totalBytes=0;g_state.usedBytes=0;
     portEXIT_CRITICAL(&g_stateLock);g_fileCount=0;
     // Last argument is explicitly false: a failed FAT mount never formats.
-    if(!SD.begin(kCardCs,g_spi,kCardFrequency,kMountPoint,5,false)||SD.cardType()==CARD_NONE) {
-        SD.end();errorState("TF card missing or mount failed; insert a FAT card and remount");return;
+#if METER_STORAGE_SDMMC
+    const bool mounted=cardFS.setPins(METER_STORAGE_CLK,METER_STORAGE_CMD,METER_STORAGE_D0)&&
+        cardFS.begin(kMountPoint,true,false,kCardFrequency/1000,5);
+#else
+    const bool mounted=cardFS.begin(kCardCs,g_spi,kCardFrequency,kMountPoint,5,false);
+#endif
+    if(!mounted||cardFS.cardType()==CARD_NONE) {
+        cardFS.end();errorState("TF card missing or mount failed; insert a FAT card and remount");return;
     }
-    if(!SD.exists(kDirectory)&&!SD.mkdir(kDirectory)) {errorState("Unable to create /meter-logs; card may be full or read-only");return;}
-    File dir=SD.open(kDirectory,FILE_READ);
+    if(!cardFS.exists(kDirectory)&&!cardFS.mkdir(kDirectory)) {errorState("Unable to create /meter-logs; card may be full or read-only");return;}
+    File dir=cardFS.open(kDirectory,FILE_READ);
     const bool isDirectory=dir&&dir.isDirectory();dir.close();
     if(!isDirectory) {errorState("/meter-logs is not a readable directory");return;}
     portENTER_CRITICAL(&g_stateLock);g_state.mounted=true;g_state.error[0]=0;portEXIT_CRITICAL(&g_stateLock);
@@ -214,14 +239,42 @@ void formatCard() {
     }
     std::unique_ptr<BYTE[]> work(new(std::nothrow) BYTE[FF_MAX_SS]);
     if(!work) {finishFormat(false,"TF format failed: unable to allocate the FAT work buffer");return;}
-    SD.end();
+    cardFS.end();
+#if !METER_STORAGE_SDMMC
     if(g_spiBegun)g_spi.end();
     g_spi.begin(kCardClock,kCardMiso,kCardMosi,kCardCs);g_spiBegun=true;
+#endif
     portENTER_CRITICAL(&g_stateLock);
     g_state.mounted=false;g_state.listTruncated=false;
     g_state.cardBytes=0;g_state.totalBytes=0;g_state.usedBytes=0;
     portEXIT_CRITICAL(&g_stateLock);g_fileCount=0;
 
+#if METER_STORAGE_SDMMC
+    // Register only this physical SDMMC card after the normal mount has ended.
+    // Obtain a free drive dynamically; never assume drive zero or format flash.
+    sdmmc_host_t host=SDMMC_HOST_DEFAULT();host.max_freq_khz=kCardFrequency/1000;
+    sdmmc_slot_config_t slot=SDMMC_SLOT_CONFIG_DEFAULT();slot.width=1;
+    slot.clk=gpio_num_t(METER_STORAGE_CLK);slot.cmd=gpio_num_t(METER_STORAGE_CMD);slot.d0=gpio_num_t(METER_STORAGE_D0);
+    sdmmc_card_t card={};BYTE drive=FF_DRV_NOT_USED;
+    if(sdmmc_host_init()!=ESP_OK){finishFormat(false,"TF format: SDMMC host unavailable");return;}
+    if(sdmmc_host_init_slot(host.slot,&slot)!=ESP_OK||sdmmc_card_init(&host,&card)!=ESP_OK||
+       ff_diskio_get_drive(&drive)!=ESP_OK||drive>=FF_VOLUMES||drive>=10){
+        sdmmc_host_deinit();finishFormat(false,"TF format: SDMMC card/drive registration failed");return;
+    }
+#if FF_MULTI_PARTITION
+    if(VolToPart[drive].pd!=drive||VolToPart[drive].pt!=0){
+        sdmmc_host_deinit();finishFormat(false,"TF format refused: SDMMC logical drive mismatch");return;
+    }
+#endif
+    ff_diskio_register_sdmmc(drive,&card);
+    if(ff_diskio_get_pdrv_card(&card)!=drive){
+        ff_diskio_unregister(drive);sdmmc_host_deinit();finishFormat(false,"TF format refused: SDMMC drive identity mismatch");return;
+    }
+    char fatDrive[3]={static_cast<char>('0'+drive),':',0};
+    const FRESULT formatted=f_mkfs(fatDrive,FM_FAT|FM_FAT32,0,work.get(),FF_MAX_SS);
+    ff_diskio_unregister(drive);
+    if(sdmmc_host_deinit()!=ESP_OK){finishFormat(false,"TF format ended but SDMMC cleanup failed");return;}
+#else
     // Allocate a fresh diskio registration specifically for this CS10/HSPI
     // card. Never assume drive 0: it may belong to an internal flash volume.
     const uint8_t drive=sdcard_init(kCardCs,&g_spi,4000000);
@@ -248,6 +301,7 @@ void formatCard() {
     const FRESULT formatted=f_mkfs(fatDrive,FM_FAT|FM_FAT32,0,work.get(),FF_MAX_SS);
     const uint8_t unmounted=sdcard_unmount(drive),uninitialized=sdcard_uninit(drive);
     if(unmounted||uninitialized) {finishFormat(false,"TF format ended but card drive cleanup failed; remount required");return;}
+#endif
     mountCard(); // Normal no-format mount; never retry the erase on failure.
     const State state=snapshot();
     if(formatted!=FR_OK) {
@@ -275,12 +329,12 @@ bool startWriter(const Record &record) {
     const std::string name=meter_log_format::fileName(bounded(record.sessionId));
     if(name.empty()) {errorState("Invalid generated TF session ID");return false;}
     const String path=String(kDirectory)+"/"+name.c_str();
-    if(SD.exists(path)) {errorState("TF session file already exists; refusing to overwrite");return false;}
+    if(cardFS.exists(path)) {errorState("TF session file already exists; refusing to overwrite");return false;}
     refreshSpace();
     const State space=snapshot();
     if(space.totalBytes<=space.usedBytes||space.totalBytes-space.usedBytes<4096) {errorState("TF card full; recording was not started");return false;}
     // fopen's exclusive-create flag is another guard against truncation. The
-    // native VFS path includes the exact mount prefix supplied to SD.begin().
+    // native VFS path includes the exact mount prefix supplied to cardFS.begin().
     const String nativePath=String(kMountPoint)+path;
     g_writer=fopen(nativePath.c_str(),"wbx");
     if(!g_writer) {errorState("Unable to create TF log; card missing, full or read-only");return false;}
@@ -501,7 +555,7 @@ uint32_t openDownload(const String &name,uint64_t &snapshotBytes,String &error) 
         if(g_writer&&!flushWriter()) {closeWriter(false);error="TF sync failed before download; recording stopped";}
         if(error.length()==0) {
             const String path=String(kDirectory)+"/"+name;
-            g_download=SD.open(path,FILE_READ);
+            g_download=cardFS.open(path,FILE_READ);
             if(!g_download||g_download.isDirectory()) {if(g_download)g_download.close();error="TF log not found or unreadable";}
             else {
                 if(++g_tokenCounter==0)++g_tokenCounter;

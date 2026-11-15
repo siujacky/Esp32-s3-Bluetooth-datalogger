@@ -10,7 +10,7 @@ compiler = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compiler)
 with tempfile.TemporaryDirectory(prefix="meter_rotation_") as temporary:
     build = pathlib.Path(temporary)
-    for name in ("jc3248w535", "lcd147", "amoled175"):
+    for name in ("jc3248w535", "lcd147", "amoled175", "lcd349_v1", "lcd349_v2"):
         profile = compiler.load_profile(repo / f"boards/meter/{name}.json")
         header = build / "meter_board_config.h"
         header.write_text(compiler.render_header(profile))

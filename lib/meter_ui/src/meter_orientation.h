@@ -19,6 +19,8 @@ public:
     bool request(unsigned value){if(!validRotation(value))return false;pending_.store(value);return true;}
     bool consume(unsigned &out){const unsigned value=pending_.exchange(4);if(!validRotation(value)||(value==current_.load()&&saved_.load()))return false;saved_.store(false);current_.store(value);out=value;return true;}
     void markSaved(bool value){saved_.store(value);}
+    // Live sensor updates do not consume/reset a concurrent manual request.
+    void applyTransient(unsigned value){if(validRotation(value)){current_.store(value);saved_.store(false);}}
 };
 
 namespace orientation_detail {

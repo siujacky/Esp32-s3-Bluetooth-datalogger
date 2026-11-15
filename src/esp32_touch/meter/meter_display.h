@@ -6,6 +6,8 @@ unsigned count();
 bool requestCount(unsigned value);
 unsigned rotation();
 bool requestRotation(unsigned value);
+// Main-loop IMU request: changes the live orientation without writing NVS.
+bool requestMotionRotation(unsigned value);
 bool rotationSaved();
 bool overlay();
 void requestOverlay(bool value);

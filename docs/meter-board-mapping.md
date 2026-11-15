@@ -18,6 +18,8 @@ flash/PSRAM interface, partitions, library implementation or panel init sequence
 | `ut_meter_jc3248w535` (default) | `jc3248w535.json` | AXS15231B QSPI / AXS15231B | 320×480; 1/1/1 |
 | `ut_meter_amoled175` | `amoled175.json` | CO5300 QSPI / CST92xx (CST9217) | 466×466; 0/0/0 |
 | `ut_meter_lcd147` | `lcd147.json` | JD9853 SPI / AXS5106L | 172×320; 1/0/0 |
+| `ut_meter_lcd349_v1` | `lcd349_v1.json` | Waveshare 3.49 AXS15231B / board-specific axes | 172×640; 1/0/0 |
+| `ut_meter_lcd349_v2` | `lcd349_v2.json` | Same panel; Rev1.1 expander reset/backlight | 172×640; 1/0/0 |
 | `ut_meter_mapped` | Required `METER_BOARD_PROFILE` path | One implemented pair above | Validated custom profile |
 
 The AMOLED target is Waveshare ESP32-S3-Touch-AMOLED-1.75, **not 1.75C**. The
@@ -91,7 +93,8 @@ does not accept hexadecimal literals or comments.
 | `theme` | `style` 0 legacy / 1 workbench; `background`, `surface`, `raised`, `text`, `muted`, `accent`, `warning`, `border` RGB565 values 0–65535; `radius` 0–24. |
 | `display` | `backend`, native `width`/`height`, `bus` (`cs`, `sck`, `data0`–`data3`, `dc`), `reset`, `backlight`, `frequency`, `offset_x`/`offset_y`. |
 | `touch` | Matching `driver`, `sda`/`scl`, 7-bit `address`, `reset`/`irq`, `frequency`, `mirror_x`/`mirror_y`/`swap_xy`, `required_pmic_address`. |
-| `storage` | `backend` `none` or `sd_spi`; `spi_host: 3`, `cs`/`mosi`/`sck`/`miso`, `frequency`. Disabled storage has all four pins `-1`. |
+| `storage` | `backend` `none`, `sd_spi` or `sdmmc_1bit`; `spi_host: 3`, SPI `cs`/`mosi`/`sck`/`miso`, SDMMC `clk`/`cmd`/`d0`, `frequency`. All pins unused by the selected backend are `-1`; omitted SDMMC fields default to `-1`. |
+| `devices` | Optional 3.49 auxiliary I2C `sda`/`scl`/`frequency`, `expander_address`/`rtc_address`/`imu_address`, and TCA9554 channel numbers `lcd_reset`/`backlight_enable`/`power_enable`. Omitted section defaults to disabled. GPIOs, addresses and active expander channels must not conflict. See [3.49 wiring and behavior](WAVESHARE_LCD349.md). |
 | `ui.reading` | View fields, large value, profile/status/flags/unit/slot labels, scope plot and labels. |
 | `ui.setup` | View fields, fixed header, scrolling viewport, row/grid geometry, information and network QR/text. |
 | `ui.advanced` | View fields, viewport, Back and compatibility Up/Down rectangles, row/card geometry, header/message and keyboard. Native swipe menus do not show an Up/Down footer. |

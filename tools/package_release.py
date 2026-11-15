@@ -40,7 +40,8 @@ def main():
         factory=(folder/'factory.bin').read_bytes()
         for offset,name in ((0,'bootloader.bin'),(0x8000,'partitions.bin'),(0xe000,'boot_app0.bin'),(0x10000,'app.bin')):
             blob=(folder/name).read_bytes();assert factory[offset:offset+len(blob)]==blob,name
-        info=dict(board=board,source_commit=commit,version=version,app_bytes=app.stat().st_size,app_sha256=sha(app),factory_sha256=sha(folder/'factory.bin'),app_offset='0x10000',factory_offset='0x0',flash='16MB',psram='8MB OPI',validation='SDK build passed; packaged image was not flashed',hardware_note='JC hardware exercised on earlier matching application code; physical edge confirmation pending' if board=='jc3248w535' else 'Build and host-test evidence only; physical board qualification pending')
+        hardware_note=('JC hardware exercised on earlier matching application code; physical edge confirmation pending' if board=='jc3248w535' else 'See docs/WAVESHARE_LCD349.md for V2 bring-up evidence and remaining physical checks' if board=='lcd349_v2' else 'Build and host-test evidence only; physical board qualification pending')
+        info=dict(board=board,source_commit=commit,version=version,app_bytes=app.stat().st_size,app_sha256=sha(app),factory_sha256=sha(folder/'factory.bin'),app_offset='0x10000',factory_offset='0x0',flash='16MB',psram='8MB OPI',validation='SDK build passed; image/source hashes verified. Packaging does not flash hardware.',hardware_note=hardware_note)
         (folder/'BUILDINFO.json').write_text(json.dumps(info,indent=2));builds[board]=info
         install=f'''# {board} — {version}
 
@@ -50,8 +51,8 @@ does not identify a display board. See the repository hardware table before use.
 
 For lcd349_v1/lcd349_v2, match the physical PCB revision: V2 has Rev1.1 on the
 PCB or V2 on its QC label. Reset and backlight pins differ. RTC/IMU integration
-and one-bit SDMMC are included; physical LCD/touch, RTC retention, IMU mounting
-axes and card reliability remain unverified. See docs/WAVESHARE_LCD349.md in
+and one-bit SDMMC are included. See docs/WAVESHARE_LCD349.md for V2 bring-up
+evidence and remaining LCD/touch, RTC retention, IMU-axis and card checks in
 the source archive. Older v0.1.0 release packages do not include these targets.
 
 ## Fresh installation

@@ -691,6 +691,9 @@ static void status() {
     panel.printTouchStatus();
     meter_calibration::printStatus();
 #endif
+#ifdef UT_METER_LCD349
+    panel.printTouchStatus();
+#endif
     Serial.printf("loop_stack_free=%u\n",unsigned(uxTaskGetStackHighWaterMark(nullptr)));
     const auto digits=meter_numerals::stats();Serial.printf("numerals=outline render_us=%lu cache_bytes=%u peak_bytes=%u misses=%u failures=%u font=%s\n",(unsigned long)lastRenderUs,unsigned(digits.bytes),unsigned(digits.peakBytes),digits.misses,digits.failures,meter_numerals::fontSha());
     auto *history=trends[v.activeSlot][v.reading.channel];
@@ -726,6 +729,10 @@ static void command(const String &line) {
     unsigned index=0,tapY=0,endX=0,endY=0;int delta=0;
     if(line=="status")status();
     else if(line=="web status")meter_web::printDiagnostics();
+#ifdef UT_METER_LCD349
+    else if(line=="touch status")panel.printTouchStatus();
+    else if(line=="board status"){JsonDocument devices;meter_board::writeStatus(devices.to<JsonObject>());serializeJson(devices,Serial);Serial.println();}
+#endif
 #ifdef UT_METER_JC3248
     else if(line=="touch status")panel.printTouchStatus();
 #endif

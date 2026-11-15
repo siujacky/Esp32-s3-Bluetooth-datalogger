@@ -25,6 +25,11 @@ int main(){
     uint16_t x=9,y=10;bool down=true;uint8_t p[32]={};assert(decodeTouch(p,32,0,x,y,down)&&!down&&x==9&&y==10);
     p[1]=1;p[2]=3;assert(!decodeTouch(p,32,0,x,y,down)&&x==9&&y==10&&!down);
     p[2]=0;p[1]=5;assert(!decodeTouch(p,32,0,x,y,down));assert(!decodeTouch(p,8,0,x,y,down));
+    // Real Rev1.1/V2 idle capture: all 32 bytes are F9. It is a release,
+    // including after a valid contact, and must preserve the last position.
+    memset(p,0xf9,sizeof(p));down=true;x=99;y=100;
+    assert(decodeTouch(p,32,0,x,y,down)&&!down&&x==99&&y==100);
+    p[31]=0;down=true;assert(!decodeTouch(p,32,0,x,y,down)&&down&&x==99&&y==100);
     MotionRotation motion;unsigned r=9;
     assert(!motion.update(0,1,0,0,r));assert(!motion.update(0,1,0,499,r));assert(motion.update(0,1,0,500,r)&&r==0);
     assert(!motion.update(0,0,1,600,r));assert(!motion.update(1,0,0,700,r));assert(motion.update(1,0,0,1200,r)&&r==1);

@@ -23,6 +23,9 @@ public:
     bool touch(uint16_t &x,uint16_t &y, bool &down);
     void brightness(uint8_t percent);
     uint32_t touchErrors=0;
+#ifdef UT_METER_LCD349
+    void printTouchStatus();
+#endif
 #ifdef UT_METER_JC3248
     void printTouchStatus();
     uint16_t rawTouchX()const;

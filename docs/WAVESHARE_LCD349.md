@@ -4,7 +4,7 @@ Meter Workbench includes dedicated builds for both revisions, with display,
 touch, TF logging, PCF85063 RTC and QMI8658 accelerometer/gyroscope support.
 The matching B and EN enclosure/battery variants use their PCB revision's build.
 These are new builds and are not part of release v0.1.0.
-Download the matching package from [release v0.2.0](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.0)
+Download the matching package from [release v0.2.1](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.1)
 and follow its included `INSTALL.md`.
 
 ## Select the revision
@@ -115,11 +115,20 @@ python test/test_meter_orientation/run_host.py
 python test/test_meter_ui/run_mapped_tests.py
 ```
 
-SDK compilation and simulated I/O do not prove physical display/touch operation,
-IMU mounting axes, RTC retention/drift or TF electrical reliability. Validate the
+Basic bring-up on a physical **Rev1.1 / V2** board was checked on 2026-11-15:
+the flashed image passed device readback, the panel and touch controller
+initialized, idle touch packets were decoded without errors, RTC UTC writes
+passed readback and survived an MCU restart, and live acceleration/gyro samples
+appeared in Diagnostics. Version **v0.2.1** recognizes the observed uniform `F9`
+idle response and fixes numeric RTC/IMU diagnostic fields. Serial `board status`
+and `touch status` expose peripheral and packet diagnostics.
+
+These checks do not prove physical display visibility, finger tracking at every
+edge, IMU mounting axes, complete RTC power-loss retention/drift, V1 hardware
+behavior or TF electrical reliability. Validate the
 matching PCB using visible test colors, corner/edge touches, UTC set/reboot with
 Wi-Fi off, RTC power-loss detection, six IMU orientations and recording/download
-on a spare card. No firmware is flashed or public release published by this port.
+on a spare card. Preserve a full original-flash backup before installation.
 
 Implementation sources: Waveshare's pinned [V1 Arduino examples](https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.49/tree/def6edd0b6e1925ed09702eed01a2f181afdf8c1/Examples/Arduino)
 and [V2 Arduino examples](https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.49-V2/tree/1c157e6e8e68b89fd4dc400f46bf1724cb64a57e/Arduino/examples).

@@ -670,8 +670,9 @@ void buildRows(){
 #ifdef UT_METER_LCD349
         add("IMU AUTO ROTATION",String(meter_board::autoRotation()?"ON":"OFF")+" / tap to switch",IMU_ROTATION);
         {const auto dev=statusDoc["boardDevices"].as<JsonObjectConst>();
-        info(String("RTC PCF85063 UTC / ")+((dev["rtc"]["valid"]|false)?"VALID":"UNSET / ERROR")+"\n"+asText(dev["rtc"]["unixMs"])+"\n"+asText(dev["rtc"]["error"]));
-        info(String("IMU QMI8658 / ")+((dev["imu"]["sampleValid"]|false)?"LIVE":"UNAVAILABLE")+"\nAccel g: "+asText(dev["imu"]["accelerationG"][0])+", "+asText(dev["imu"]["accelerationG"][1])+", "+asText(dev["imu"]["accelerationG"][2])+"\nGyro deg/s: "+asText(dev["imu"]["angularVelocityDps"][0])+", "+asText(dev["imu"]["angularVelocityDps"][1])+", "+asText(dev["imu"]["angularVelocityDps"][2])+"\n"+asText(dev["imu"]["error"]));}
+        info(String("RTC PCF85063 UTC / ")+((dev["rtc"]["valid"]|false)?"VALID":"UNSET / ERROR")+"\n"+(dev["rtc"]["unixMs"].is<uint64_t>()?String(dev["rtc"]["unixMs"].as<uint64_t>()):String("--"))+"\n"+asText(dev["rtc"]["error"]));
+        auto axis=[&](const char *group,unsigned i){const auto v=dev["imu"][group][i];return v.is<double>()?number(v.as<double>()):String("--");};
+        info(String("IMU QMI8658 / ")+((dev["imu"]["sampleValid"]|false)?"LIVE":"UNAVAILABLE")+"\nAccel g: "+axis("accelerationG",0)+", "+axis("accelerationG",1)+", "+axis("accelerationG",2)+"\nGyro deg/s: "+axis("angularVelocityDps",0)+", "+axis("angularVelocityDps",1)+", "+axis("angularVelocityDps",2)+"\n"+asText(dev["imu"]["error"]));}
 #endif
         add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" / "+(meter_display::lightSaved()?"saved":"RAM only"),AUTO_DIM);

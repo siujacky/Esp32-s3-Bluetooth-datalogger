@@ -14,12 +14,20 @@ namespace {
 constexpr size_t rowsPerTransfer=32,pixelsPerTransfer=172*rowsPerTransfer;
 spi_device_handle_t lcd=nullptr;
 uint16_t *dmaPixels=nullptr;bool ready=false,touchReady=false;
+uint32_t polls=0,ioErrors=0,decodeErrors=0,contacts=0;
+uint8_t lastPacket[32]={},lastTx=0,lastCount=0;
 bool transfer(uint8_t command,const void *data,size_t bytes,bool color=false){
     spi_transaction_t transaction={};transaction.cmd=color?0x32:0x02;
     transaction.addr=uint32_t(command)<<8;transaction.length=bytes*8;transaction.tx_buffer=data;
     if(color)transaction.flags=SPI_TRANS_MODE_QIO;
     return spi_device_polling_transmit(lcd,&transaction)==ESP_OK;
 }
+}
+void DeskPanel::printTouchStatus(){
+    Serial.printf("touch_diag polls=%lu io_errors=%lu decode_errors=%lu contacts=%lu tx=%u bytes=%u packet=",
+        (unsigned long)polls,(unsigned long)ioErrors,(unsigned long)decodeErrors,(unsigned long)contacts,lastTx,lastCount);
+    for(auto byte:lastPacket){Serial.printf("%02X",byte);}
+    Serial.printf("\n");
 }
 bool DeskPanel::begin(){
     pinMode(METER_DISPLAY_BACKLIGHT,OUTPUT);digitalWrite(METER_DISPLAY_BACKLIGHT,LOW);
@@ -77,13 +85,18 @@ bool DeskPanel::touch(uint16_t &x,uint16_t &y,bool &down){
     if(!touchReady)return false;
     static uint32_t lastRead=0;const uint32_t now=millis();if(uint32_t(now-lastRead)<20)return false;lastRead=now;
     static const uint8_t command[]={0xb5,0xab,0xa5,0x5a,0,0,0,0x0e,0,0,0};uint8_t bytes[32];
+    ++polls;
     Wire.beginTransmission(METER_TOUCH_ADDRESS);Wire.write(command,sizeof(command));
-    if(Wire.endTransmission(false)!=0||Wire.requestFrom(uint8_t(METER_TOUCH_ADDRESS),uint8_t(sizeof(bytes)))!=sizeof(bytes)){
+    lastTx=Wire.endTransmission(false);lastCount=0;
+    if(!lastTx)lastCount=Wire.requestFrom(uint8_t(METER_TOUCH_ADDRESS),uint8_t(sizeof(bytes)));
+    if(lastTx||lastCount!=sizeof(bytes)){
         while(Wire.available())Wire.read();
-        ++touchErrors;return false;
+        ++touchErrors;++ioErrors;return false;
     }
     Wire.readBytes(bytes,sizeof(bytes));
-    if(!waveshare349::decodeTouch(bytes,sizeof(bytes),getRotation(),x,y,down)){++touchErrors;return false;}
+    memcpy(lastPacket,bytes,sizeof(bytes));
+    if(!waveshare349::decodeTouch(bytes,sizeof(bytes),getRotation(),x,y,down)){++touchErrors;++decodeErrors;return false;}
+    if(down)++contacts;
     return true;
 }
 #endif

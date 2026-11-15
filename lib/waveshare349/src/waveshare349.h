@@ -37,7 +37,13 @@ inline bool encodeRtc(uint64_t unixMs,uint8_t *p,size_t n){
     return true;
 }
 inline bool decodeTouch(const uint8_t *p,size_t n,unsigned rotation,uint16_t &x,uint16_t &y,bool &down){
-    if(!p||n!=32||rotation>3||p[1]>1)return false;
+    if(!p||n!=32||rotation>3)return false;
+    // Captured on the physical Waveshare Rev1.1/V2 when no finger is down.
+    // Match the whole marker; a mixed/corrupt response is still rejected.
+    bool idle=p[0]==0xf9;
+    for(size_t i=1;idle&&i<n;++i)if(p[i]!=0xf9)idle=false;
+    if(idle){down=false;return true;}
+    if(p[1]>1)return false;
     if(!p[1]){down=false;return true;}
     const unsigned event=p[2]>>6;if(event==1){down=false;return true;}if(event==3)return false;
     const unsigned rawX=((p[2]&15)<<8)|p[3],rawY=((p[4]&15)<<8)|p[5];

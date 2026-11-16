@@ -54,7 +54,8 @@ class Waveshare349Tests(unittest.TestCase):
                             '-I',str(ROOT/'src/esp32_touch/meter'),'-I',str(ROOT/'.pio/libdeps/ut_meter_lcd349_v2/ArduinoJson/src'),
                             str(ROOT/'test/test_waveshare349/service_host.cpp'),str(ROOT/'src/esp32_touch/meter/meter_board_devices.cpp'),
                             '-o',str(exe)],check=True)
-            for case in ('valid','stopped','12-hour','rtc-write-fail','imu-nack','imu-short','missing-imu','missing-rtc','missing-expander'):
+            for case in ('valid','stopped','12-hour','rtc-write-fail','imu-nack','imu-short','missing-imu','missing-rtc','missing-expander',
+                         'offset-restart','offset-invalid','offset-unreadable','offset-write-fail','offset-readback-fail'):
                 subprocess.run([str(exe),case],check=True)
 
     def test_panel_spi_and_pixel_contract(self):

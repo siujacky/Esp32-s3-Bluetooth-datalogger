@@ -4,7 +4,7 @@ Meter Workbench includes dedicated builds for both revisions, with display,
 touch, TF logging, PCF85063 RTC and QMI8658 accelerometer/gyroscope support.
 The matching B and EN enclosure/battery variants use their PCB revision's build.
 These are new builds and are not part of release v0.1.0.
-Download the matching package from [release v0.2.2](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.2)
+Download the matching package from [release v0.2.3](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.3)
 and follow its included `INSTALL.md`.
 
 ## Select the revision
@@ -87,8 +87,14 @@ ignored. Normal menus rotate with the display. Rotation pauses during contact,
 calibration, text entry, confirmation dialogs and open choice lists. Motion
 changes only the live orientation and never writes flash for each turn.
 Selecting a manual screen rotation disables automatic rotation and saves your
-manual choice. The assumed sensor-to-panel axes need confirmation on a real
-board; keep manual rotation selected if the physical orientation differs.
+manual choice. If automatic rotation is sideways, open **IMU ALIGNMENT** beside
+**SCREEN ROTATION** in Value controls, Screen controls or Diagnostics. Choose
+**90 degrees clockwise** or **90 degrees counterclockwise** to turn the text
+upright; **0 degrees (none)** and **180 degrees** are also available. The
+correction saves across restarts, affects only automatic rotation and leaves
+automatic mode enabled. The row reports whether the correction was saved.
+The API exposes `rotationOffsetDegrees` and `rotationOffsetSaved` in
+`boardDevices.imu`. Physical mounting axes still need acceptance on each revision.
 
 ## TF recording
 
@@ -129,6 +135,12 @@ Version **v0.2.2** adds the Automatic (IMU) screen-rotation choice and allows
 rotation in normal menus. On V2, selecting Automatic saved the setting and
 changed the live orientation from 0 to 180 degrees with Diagnostics still open,
 using real IMU gravity samples. Physical direction confirmation remains pending.
+
+Version **v0.2.3** adds adjustable IMU alignment. On V2, all four UI choices
+were saved and read back with automatic mode still enabled. A 270-degree
+correction and valid RTC UTC survived an MCU restart. Zero correction was then
+restored so the user could select the mounting correction on the touchscreen.
+Host checks cover all four corrections in all four gravity directions.
 
 These checks do not prove physical display visibility, finger tracking at every
 edge, IMU mounting axes, complete RTC power-loss retention/drift, V1 hardware

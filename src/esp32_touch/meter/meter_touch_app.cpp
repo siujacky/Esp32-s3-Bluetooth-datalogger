@@ -44,7 +44,7 @@ enum Action {NONE=0,NETWORK,RECORDING,CARD,RULES,CALCULATIONS,EVENTS,DIAGNOSTICS
     CALC_SETTINGS,CALC_START,CALC_PAUSE,CALC_RESET,CALC_WEB,REFRESH,CLOCK_EDIT,CLOCK_SET,SHOW_WEB,SHOW_SESSIONS,SHOW_SUMMARIES,
     CONFIRM_INPUT,CONFIRM_EXECUTE,KEY_LEFT,KEY_RIGHT,KEY_SPACE,KEY_LF,KEY_PREVIOUS,KEY_NEXT,KEY_BACKSPACE,KEY_DONE,
     SCOPE_MENU,SCOPE_METER,SCOPE_CHANNEL,SCOPE_WINDOW,SCOPE_CLEAR,SCOPE_SHOW,README_QR,RULE_USE_UNIT,FILE_PREVIOUS,FILE_NEXT,TOUCH_CALIBRATE,DISPLAY_COUNT,CHART_LAYOUT,AUTO_DIM,
-    VALUES_MENU,FORMAT_SLOT,FORMAT_CHANNEL,FORMAT_DIGITS,FORMAT_DECIMALS,FORMAT_PADDING,FORMAT_SAVE,VALUE_SHOW,VALUE_LAYOUT,BT_MENU,BT_SLOT,BT_DEVICE,BT_PROFILE,BT_SCAN,BT_CONNECT,BT_DISCONNECT,NTP_MENU,NTP_ENABLED,NTP_SERVER,NTP_SAVE,NTP_SYNC,SCREEN_ROTATION,ALL_FUNCTIONS,IMU_ROTATION};
+    VALUES_MENU,FORMAT_SLOT,FORMAT_CHANNEL,FORMAT_DIGITS,FORMAT_DECIMALS,FORMAT_PADDING,FORMAT_SAVE,VALUE_SHOW,VALUE_LAYOUT,BT_MENU,BT_SLOT,BT_DEVICE,BT_PROFILE,BT_SCAN,BT_CONNECT,BT_DISCONNECT,NTP_MENU,NTP_ENABLED,NTP_SERVER,NTP_SAVE,NTP_SYNC,SCREEN_ROTATION,ALL_FUNCTIONS,IMU_ROTATION,IMU_ALIGNMENT};
 class JsonAllocator:public ArduinoJson::Allocator {
 public:
     void *allocate(size_t n) override {void *p=heap_caps_malloc(n,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);return p?p:heap_caps_malloc(n,MALLOC_CAP_8BIT);}
@@ -386,6 +386,12 @@ void openChoice(int target){
   for(unsigned i=0;i<4;++i)option(String(i*90)+" degrees",i);
 #endif
   break;
+#ifdef UT_METER_LCD349
+ case IMU_ALIGNMENT:
+  dropdownTitle="IMU alignment";current=int(meter_board::imuRotationOffset());
+  option("0 degrees (none)",0);option("90 degrees clockwise",1);
+  option("180 degrees",2);option("90 degrees counterclockwise",3);break;
+#endif
  case VALUE_LAYOUT:{dropdownTitle="Value layout";auto prefs=meter_values::snapshot();current=int(prefs.presets[meter_display::count()-1]);const char *names[]={"Solo / 1 meter","Equal / 2 or 3 meters","1 large + 1 small","1 large + 2 small","2 large + 1 small","Grid / 4 meters"};for(int i=0;i<6;++i)option(names[i],i);break;}
  case SCOPE_CHANNEL:dropdownTitle="Display channel";current=scopeChannels[meter_ble::activeSlot()]+1;option("Auto / current channel",-1);for(unsigned i=0;i<8;++i)option(String("Channel ")+String(i+1),i);break;
  case FORMAT_CHANNEL:dropdownTitle="Format channel";channels(formatChannel);break;
@@ -430,6 +436,12 @@ void chooseOption(unsigned visibleIndex){
   else if(!meter_display::requestRotation(unsigned(value)))message("Screen rotation request unavailable");
   else message("Manual rotation requested; check saved status");
  }
+#ifdef UT_METER_LCD349
+ else if(target==IMU_ALIGNMENT){
+  if(!meter_board::setImuRotationOffset(unsigned(value)))message("IMU alignment unavailable");
+  else message("IMU alignment requested; check saved status");
+ }
+#endif
  else if(target==VALUE_LAYOUT){if(meter_values::requestNativeLayout(meter_ui::ValuePreset(value))){dropdownReturn=1;}else message("Layout request unavailable");}
  else if(target==SCOPE_CHANNEL){scopeChannels[meter_ble::activeSlot()]=value;if(value>=0)meter_ble::selectChannel(meter_ble::activeSlot(),value);}
  else if(target==FORMAT_SLOT||target==FORMAT_CHANNEL){selectFormatContext(target==FORMAT_SLOT?unsigned(value):formatSlot,target==FORMAT_CHANNEL?unsigned(value):formatChannel);message(formatDirty?"Unsaved preview restored for this meter/channel":"Number format selected; changes need Save");}
@@ -451,7 +463,7 @@ void chooseOption(unsigned visibleIndex){
  if(dropdownReturn>=0)closeDropdown();redraw=true;
 }
 void execute(int action){
-    if(action==DISPLAY_COUNT||action==SCREEN_ROTATION||action==VALUE_LAYOUT||action==SCOPE_METER||action==SCOPE_CHANNEL||action==SCOPE_WINDOW||action==CHART_LAYOUT||action==FORMAT_SLOT||action==FORMAT_CHANNEL||action==FORMAT_DIGITS||action==FORMAT_DECIMALS||action==FORMAT_PADDING||action==BT_SLOT||action==BT_DEVICE||action==BT_PROFILE||action==NTP_ENABLED||action==NTP_SERVER||action==4000||action==4001||action==4002||action==4004||action==4008||(action>=5000&&action<=5005)){openChoice(action);return;}
+    if(action==DISPLAY_COUNT||action==SCREEN_ROTATION||action==IMU_ALIGNMENT||action==VALUE_LAYOUT||action==SCOPE_METER||action==SCOPE_CHANNEL||action==SCOPE_WINDOW||action==CHART_LAYOUT||action==FORMAT_SLOT||action==FORMAT_CHANNEL||action==FORMAT_DIGITS||action==FORMAT_DECIMALS||action==FORMAT_PADDING||action==BT_SLOT||action==BT_DEVICE||action==BT_PROFILE||action==NTP_ENABLED||action==NTP_SERVER||action==4000||action==4001||action==4002||action==4004||action==4008||(action>=5000&&action<=5005)){openChoice(action);return;}
 
     if(action>=6000&&action<6006){const auto preset=meter_ui::ValuePreset(action-6000);if(meter_values::requestNativeLayout(preset)){valuesRequested=true;active.store(false);}else message("Value layout request unavailable");return;}
     if(action>=1000&&action<1100){unsigned index=action-1000;auto list=scanDoc["networks"].as<JsonArrayConst>();if(index<list.size()){auto n=list[index];if(!(n["joinable"]|false)){message("This Wi-Fi security type is unsupported");return;}wifiSsid=asText(n["ssid"]);wifiPassword="";message("Selected "+wifiSsid+"; enter password, then Join");}return;}
@@ -556,6 +568,13 @@ String rotationDetail(){
     return String(meter_display::rotation()*90)+" degrees / "+(meter_display::rotationSaved()?"saved":"RAM / waiting to save");
 #endif
 }
+void rotationControls(bool enabled){
+    add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,enabled);
+#ifdef UT_METER_LCD349
+    const char *names[]={"0 degrees","90 clockwise","180 degrees","90 counterclockwise"};
+    add("IMU ALIGNMENT",String(names[meter_board::imuRotationOffset()])+" / "+(meter_board::imuRotationOffsetSaved()?"saved":"RAM / not saved"),IMU_ALIGNMENT,enabled);
+#endif
+}
 void buildRows(){
     rows.clear();JsonObjectConst rec=statusDoc["recording"].as<JsonObjectConst>(),net=statusDoc["network"].as<JsonObjectConst>(),card=statusDoc["storage"].as<JsonObjectConst>();
     const bool freshStatus=statusFresh();
@@ -566,14 +585,14 @@ void buildRows(){
         add("IMU AUTO ROTATION",String(meter_board::autoRotation()?"ON":"OFF")+" / tap to switch",IMU_ROTATION);
 #endif
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" (tap to switch)",AUTO_DIM);
-        add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::busy());
+        rotationControls(!meter_calibration::busy());
         add("SHOW VALUES","Full-screen meter readings",VALUE_SHOW);
         add("SHOW FULL SCOPE","Full-screen chart",SCOPE_SHOW);
         info("Live shortcuts: top down = screen; left inward = meters; right inward = functions. Swipe up on values for layout. Back returns to the previous live view.");break;
     case Page::Quick:
         add("LAYOUT",meter_ui::valuePresetName(meter_values::snapshot().presets[meter_display::count()-1]),VALUE_LAYOUT);
         add("METERS SHOWN",String(meter_display::count())+" / 4",DISPLAY_COUNT);
-        add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
+        rotationControls(!meter_calibration::active());
         add("VALUES / NUMBER FORMAT","Meter tabs, digits, decimals and padding",VALUES_MENU);
         add("METERS / BLUETOOTH","M1-M4 setup, scan and explicit Connect",BT_MENU);
         add("ALL FUNCTIONS","Wi-Fi, TF files, triggers, charts and more",ALL_FUNCTIONS);
@@ -658,7 +677,7 @@ void buildRows(){
         add("DISPLAY CHANNEL",(meter_touch::scopeChannel(meter_ble::activeSlot())<0?String("Auto / current channel"):String(meter_touch::scopeChannel(meter_ble::activeSlot())+1))+" (select)",SCOPE_CHANNEL);
         add("METERS SHOWN",String(meter_display::count())+" / 4",DISPLAY_COUNT);
         add("VALUE LAYOUT",meter_ui::valuePresetName(prefs.presets[meter_display::count()-1]),VALUE_LAYOUT);
-        add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
+        rotationControls(!meter_calibration::active());
         if(!layout.tabs.columns)add("FORMAT METER",String("Meter ")+String(formatSlot+1),FORMAT_SLOT);
         add("FORMAT CHANNEL",String(formatChannel+1)+" / 8",FORMAT_CHANNEL);
         add("TOTAL DIGITS",String(editedFormat.digits)+" / 3..8 (sign/point have their own space)",FORMAT_DIGITS);
@@ -673,7 +692,7 @@ void buildRows(){
         info("Fixed digits and decimals change only the display. Original precision remains in charts, calculations, API and logs. OVR keeps the original reading below the value. Sources stay in cyclic slot order.");break;}
     case Page::Scope:{
         add("VALUES / FORMAT","CCTV value layouts, digits and decimals",VALUES_MENU);
-        add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
+        rotationControls(!meter_calibration::active());
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" (tap to switch)",AUTO_DIM);
         add("METERS SHOWN",String(meter_display::count())+" / 4 (select) / "+(meter_display::saved()?"saved":"RAM only"),DISPLAY_COUNT);
         add("CHART LAYOUT",String(meter_display::overlay()?"Overlay / one chart":"Separate / chart lanes")+" (tap to switch)",CHART_LAYOUT);
@@ -697,7 +716,7 @@ void buildRows(){
         auto axis=[&](const char *group,unsigned i){const auto v=dev["imu"][group][i];return v.is<double>()?number(v.as<double>()):String("--");};
         info(String("IMU QMI8658 / ")+((dev["imu"]["sampleValid"]|false)?"LIVE":"UNAVAILABLE")+"\nAccel g: "+axis("accelerationG",0)+", "+axis("accelerationG",1)+", "+axis("accelerationG",2)+"\nGyro deg/s: "+axis("angularVelocityDps",0)+", "+axis("angularVelocityDps",1)+", "+axis("angularVelocityDps",2)+"\n"+asText(dev["imu"]["error"]));}
 #endif
-        add("SCREEN ROTATION",rotationDetail(),SCREEN_ROTATION,!meter_calibration::active());
+        rotationControls(!meter_calibration::active());
         add("AUTO DIM",String(meter_display::autoDim()?"ON / 2 min idle to 10%":"OFF / keep screen bright")+" / "+(meter_display::lightSaved()?"saved":"RAM only"),AUTO_DIM);
 #ifdef UT_METER_JC3248
         add("TOUCH CALIBRATION","Four corners + centre; saved in NVS",TOUCH_CALIBRATE);

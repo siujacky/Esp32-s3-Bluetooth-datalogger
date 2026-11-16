@@ -15,7 +15,7 @@ struct State {
     bool bus=false,expander=false,rtc=false,rtcValid=false,imu=false,sampleValid=false,autoRotate=false,saved=false;
     uint64_t rtcMs=0,rtcAt=0;uint32_t sampleAt=0,rtcWrites=0,rtcErrors=0,imuErrors=0;
     float ax=0,ay=0,az=0,gx=0,gy=0,gz=0;
-    unsigned suggestion=4;char rtcError[96]={},imuError[96]={};
+    unsigned suggestion=4,rotationOffset=0;bool offsetSaved=false;char rtcError[96]={},imuError[96]={};
 };
 State state;
 portMUX_TYPE stateLock=portMUX_INITIALIZER_UNLOCKED;
@@ -23,6 +23,7 @@ bool started=false;uint8_t expanderOutput=0,expanderConfig=0xff;
 uint8_t pinMask(int pin){return pin>=0&&pin<8?uint8_t(1u<<unsigned(pin)):0;}
 Preferences preferences;SensorQMI8658 imu;waveshare349::MotionRotation motion;
 std::atomic<unsigned> setting{2},suggested{4};
+std::atomic<unsigned> offsetSetting{4};
 uint64_t pendingRtc=0,pendingAt=0;
 uint64_t uptime(){return uint64_t(esp_timer_get_time()/1000);}
 State snapshot(){portENTER_CRITICAL(&stateLock);const State result=state;portEXIT_CRITICAL(&stateLock);return result;}
@@ -92,6 +93,9 @@ bool begin(){
     const bool opened=preferences.begin("meter-sensors",false);
     initial.autoRotate=opened&&preferences.getBool("auto-rotate",false);
     initial.saved=opened;
+    // An absent, wrong-type or unreadable key uses zero in RAM, not "saved".
+    const unsigned savedOffset=opened?preferences.getUChar("imu-offset",0xff):0xff;
+    initial.rotationOffset=savedOffset<4?savedOffset:0;initial.offsetSaved=opened&&savedOffset<4;
     uint8_t probe=0;initial.rtc=initial.bus&&read(METER_DEVICES_RTC_ADDRESS,0,&probe,1);
     // Preserve the shared Wire1 pin/frequency setup; the driver handles WHO_AM_I
     // and bounded reset before enabling both calibrated measurement ranges.
@@ -111,6 +115,9 @@ uint64_t rtcUnixMs(){const State s=snapshot();return s.rtcValid?s.rtcMs+(uptime(
 void syncRtc(uint64_t utc){portENTER_CRITICAL(&stateLock);pendingRtc=utc;pendingAt=uptime();portEXIT_CRITICAL(&stateLock);}
 bool autoRotation(){return snapshot().autoRotate;}
 void setAutoRotation(bool enabled){setting.store(enabled?1:0);}
+unsigned imuRotationOffset(){return snapshot().rotationOffset;}
+bool imuRotationOffsetSaved(){return snapshot().offsetSaved;}
+bool setImuRotationOffset(unsigned quarterTurns){if(quarterTurns>3)return false;offsetSetting.store(quarterTurns);return true;}
 bool takeRotation(unsigned &rotation){const unsigned value=suggested.exchange(4);if(value>3)return false;rotation=value;return true;}
 void tick(bool allowMotion){
     if(!started)return;
@@ -120,6 +127,12 @@ void tick(bool allowMotion){
     if(requested<2){
         const bool ok=preferences.putBool("auto-rotate",requested!=0)==1&&preferences.getBool("auto-rotate",requested==0)==(requested!=0);
         portENTER_CRITICAL(&stateLock);state.autoRotate=requested!=0;state.saved=ok;portEXIT_CRITICAL(&stateLock);
+        motion.reset();suggested.store(4);
+    }
+    const unsigned requestedOffset=offsetSetting.exchange(4);
+    if(requestedOffset<4){
+        const bool ok=preferences.putUChar("imu-offset",uint8_t(requestedOffset))==1&&preferences.getUChar("imu-offset",0xff)==requestedOffset;
+        portENTER_CRITICAL(&stateLock);state.rotationOffset=requestedOffset;state.offsetSaved=ok;state.suggestion=4;portEXIT_CRITICAL(&stateLock);
         motion.reset();suggested.store(4);
     }
     static uint32_t lastRtc=0,lastImu=0;const uint32_t now=millis();
@@ -139,7 +152,7 @@ void tick(bool allowMotion){
     const float ax=axes[0],ay=axes[1],az=axes[2],gx=axes[3],gy=axes[4],gz=axes[5];
     unsigned rotation=4;
     if(valid&&allowMotion&&autoRotation()&&std::fmax(std::fabs(gx),std::fmax(std::fabs(gy),std::fabs(gz)))<25){
-        if(motion.update(ax,ay,az,now,rotation))suggested.store(rotation);
+        if(motion.update(ax,ay,az,now,rotation)){rotation=(rotation+imuRotationOffset())%4;suggested.store(rotation);}
     }else motion.reset();
     portENTER_CRITICAL(&stateLock);state.sampleValid=valid;
     if(valid){state.ax=ax;state.ay=ay;state.az=az;state.gx=gx;state.gy=gy;state.gz=gz;state.sampleAt=now;state.imuError[0]=0;}
@@ -156,6 +169,7 @@ void writeStatus(JsonObject out){
     sensor["sampleUptimeMs"]=s.sampleAt;sensor["errors"]=s.imuErrors;sensor["error"]=JsonString(s.imuError);
     if(s.sampleValid){auto a=sensor["accelerationG"].to<JsonArray>();a.add(s.ax);a.add(s.ay);a.add(s.az);auto g=sensor["angularVelocityDps"].to<JsonArray>();g.add(s.gx);g.add(s.gy);g.add(s.gz);}
     sensor["autoRotation"]=s.autoRotate;sensor["settingSaved"]=s.saved;
+    sensor["rotationOffsetDegrees"]=s.rotationOffset*90;sensor["rotationOffsetSaved"]=s.offsetSaved;
     if(s.suggestion<4)sensor["suggestedRotation"]=s.suggestion;else sensor["suggestedRotation"]=nullptr;
 }
 }
@@ -164,6 +178,7 @@ namespace meter_board {
 bool begin(){return true;}bool lcdReset(bool){return true;}bool backlightEnable(bool){return true;}
 uint64_t rtcUnixMs(){return 0;}void syncRtc(uint64_t){}void tick(bool){}
 bool takeRotation(unsigned &){return false;}bool autoRotation(){return false;}void setAutoRotation(bool){}
+unsigned imuRotationOffset(){return 0;}bool imuRotationOffsetSaved(){return false;}bool setImuRotationOffset(unsigned){return false;}
 void writeStatus(JsonObject out){out["supported"]=false;}
 }
 #endif

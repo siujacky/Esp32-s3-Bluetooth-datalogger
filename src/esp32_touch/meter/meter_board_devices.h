@@ -14,5 +14,8 @@ void tick(bool allowMotion);
 bool takeRotation(unsigned &rotation);
 bool autoRotation();
 void setAutoRotation(bool enabled);
+unsigned imuRotationOffset();
+bool imuRotationOffsetSaved();
+bool setImuRotationOffset(unsigned quarterTurns);
 void writeStatus(JsonObject out);
 }

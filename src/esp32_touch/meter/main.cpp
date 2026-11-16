@@ -852,7 +852,7 @@ void loop() {
         meter_web::publish(sample);
     }
     meter_web::tick();
-    const bool motionAllowed=!physicalContact&&!meter_calibration::busy()&&!meter_touch::isOpen();
+    const bool motionAllowed=!physicalContact&&!meter_calibration::busy()&&!meter_touch::autoRotationBlocked();
     meter_board::tick(motionAllowed);
     unsigned motionRotation=4;
     if(motionAllowed&&meter_board::takeRotation(motionRotation))meter_display::requestMotionRotation(motionRotation);

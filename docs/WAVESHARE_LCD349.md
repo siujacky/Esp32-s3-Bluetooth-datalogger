@@ -4,7 +4,7 @@ Meter Workbench includes dedicated builds for both revisions, with display,
 touch, TF logging, PCF85063 RTC and QMI8658 accelerometer/gyroscope support.
 The matching B and EN enclosure/battery variants use their PCB revision's build.
 These are new builds and are not part of release v0.1.0.
-Download the matching package from [release v0.2.1](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.1)
+Download the matching package from [release v0.2.2](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.2)
 and follow its included `INSTALL.md`.
 
 ## Select the revision
@@ -27,8 +27,8 @@ wiring differ. See [Waveshare's revision notice](https://docs.waveshare.com/ESP3
 | TCA9554 / RTC / IMU addresses | `0x20` / `0x51` / `0x6b` | Same |
 | SDMMC CLK / CMD / D0 | 41 / 39 / 40 | Same |
 
-The native panel is **172×640**, with RGB565 QSPI mode 3 at 40 MHz. The default
-reading orientation is 640×172. Setup/functions have portrait reference layouts;
+The native panel is **172Ã—640**, with RGB565 QSPI mode 3 at 40 MHz. The default
+reading orientation is 640Ã—172. Setup/functions have portrait reference layouts;
 the runtime orientation adapter supports all four screen rotations. The display
 driver uses the Waveshare panel's short OTP initialization and its touch axes;
 the JC3248 driver is not interchangeable.
@@ -74,15 +74,17 @@ the firmware compilation date. Physical power-retention testing is pending.
 
 ## IMU and automatic rotation
 
-The QMI8658 runs its accelerometer at ±2 g and gyroscope at ±512 degrees/s.
+The QMI8658 runs its accelerometer at Â±2 g and gyroscope at Â±512 degrees/s.
 The service samples at 20 Hz and exposes acceleration in g and angular velocity
-in degrees/s under `GET /api/status` → `boardDevices.imu`. Open **Functions →
+in degrees/s under `GET /api/status` â†’ `boardDevices.imu`. Open **Functions â†’
 Diagnostics** to see RTC and live IMU values on the screen.
 
-**Top edge down → Screen controls → IMU auto rotation** toggles automatic
-rotation. It defaults off and saves the toggle in NVS. Stable gravity must
+Choose **Screen rotation â†’ Automatic (IMU)** in Value controls or Screen
+controls. **Top edge down â†’ Screen controls â†’ IMU auto rotation** also toggles
+automatic rotation. It defaults off and saves the toggle in NVS. Stable gravity must
 persist for 500 ms; flat, diagonal, accelerated or rapidly turning samples are
-ignored. Rotation pauses during contact, calibration and open forms. Motion
+ignored. Normal menus rotate with the display. Rotation pauses during contact,
+calibration, text entry, confirmation dialogs and open choice lists. Motion
 changes only the live orientation and never writes flash for each turn.
 Selecting a manual screen rotation disables automatic rotation and saves your
 manual choice. The assumed sensor-to-panel axes need confirmation on a real
@@ -122,6 +124,11 @@ passed readback and survived an MCU restart, and live acceleration/gyro samples
 appeared in Diagnostics. Version **v0.2.1** recognizes the observed uniform `F9`
 idle response and fixes numeric RTC/IMU diagnostic fields. Serial `board status`
 and `touch status` expose peripheral and packet diagnostics.
+
+Version **v0.2.2** adds the Automatic (IMU) screen-rotation choice and allows
+rotation in normal menus. On V2, selecting Automatic saved the setting and
+changed the live orientation from 0 to 180 degrees with Diagnostics still open,
+using real IMU gravity samples. Physical direction confirmation remains pending.
 
 These checks do not prove physical display visibility, finger tracking at every
 edge, IMU mounting axes, complete RTC power-loss retention/drift, V1 hardware

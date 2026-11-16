@@ -16,6 +16,14 @@ void setUp(){}void tearDown(){}
 #endif
 using namespace meter_ui;
 using namespace meter_touch;
+static void ordinary_menus_rotate_but_interactive_modals_wait(){
+    assert(!blocksAutoRotation(false,false,false,false));
+    assert(!blocksAutoRotation(true,false,false,false)); // Value/Screen/Functions menus.
+    assert(blocksAutoRotation(true,true,false,false));   // Text keyboard.
+    assert(blocksAutoRotation(true,false,true,false));   // Confirmation.
+    assert(blocksAutoRotation(true,false,false,true));   // Open selection list.
+    assert(!blocksAutoRotation(false,true,true,true));   // Closed UI never blocks.
+}
 static bool overlaps(Rect a,Rect b){return intersect(a,b).w>0&&intersect(a,b).h>0;}
 static void allRowsReachable(Rect area,const AdvancedSpec &spec){
     RowLayout rows(area,spec.row.step,spec.row.gap);
@@ -91,8 +99,8 @@ static void all_native_rotations_are_reachable(){
 
 int main(){
 #ifdef METER_NATIVE_SWIPE_STANDALONE
- all_native_rotations_are_reachable();return 0;
+ ordinary_menus_rotate_but_interactive_modals_wait();all_native_rotations_are_reachable();return 0;
 #else
- UNITY_BEGIN();RUN_TEST(all_native_rotations_are_reachable);return UNITY_END();
+ UNITY_BEGIN();RUN_TEST(ordinary_menus_rotate_but_interactive_modals_wait);RUN_TEST(all_native_rotations_are_reachable);return UNITY_END();
 #endif
 }

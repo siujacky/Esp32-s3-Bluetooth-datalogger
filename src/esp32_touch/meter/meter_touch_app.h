@@ -8,6 +8,10 @@ class String;
 namespace meter_ble {struct Event;}
 namespace ut_meter {enum class TouchEdge : uint8_t;}
 namespace meter_touch {
+// Browsing a menu is safe to reflow; active input needs stable touch targets.
+inline bool blocksAutoRotation(bool uiOpen,bool editingText,bool confirmingAction,bool selectionOpen){
+    return uiOpen&&(editingText||confirmingAction||selectionOpen);
+}
 // These bounds are shared by rendering and hit testing, including partially
 // visible rows. Use wide arithmetic so serial gestures cannot overflow them.
 inline int scrollOffset(int current,int delta,int content,int viewport){
@@ -119,6 +123,7 @@ enum class Selector {Meter,Count,Channel,Layout,Device,Profile};
 void openSelector(Selector type,int returnView=-1);
 void close();
 bool isOpen();
+bool autoRotationBlocked();
 void draw(DeskPanel &panel);
 void contact(uint16_t x,uint16_t y,bool down);
 void resetContact();

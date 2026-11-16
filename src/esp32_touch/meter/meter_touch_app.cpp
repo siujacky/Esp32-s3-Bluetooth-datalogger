@@ -376,7 +376,16 @@ void openChoice(int target){
  case SCOPE_METER:case BT_SLOT:dropdownTitle="Meter";meters(meter_ble::activeSlot());break;
  case FORMAT_SLOT:dropdownTitle="Format meter";meters(formatSlot);break;
  case DISPLAY_COUNT:dropdownTitle="Meters shown";current=meter_display::count()-1;for(unsigned i=1;i<=4;++i)option(String(i)+" meters",i);break;
- case SCREEN_ROTATION:dropdownTitle="Screen rotation";current=meter_display::rotation();for(unsigned i=0;i<4;++i)option(String(i*90)+" degrees",i);break;
+ case SCREEN_ROTATION:
+  dropdownTitle="Screen rotation";current=meter_display::rotation();
+#ifdef UT_METER_LCD349
+  current=meter_board::autoRotation()?0:int(meter_display::rotation())+1;
+  option("Automatic (IMU)",4);
+  for(unsigned i=0;i<4;++i)option(String(i*90)+" degrees (manual)",i);
+#else
+  for(unsigned i=0;i<4;++i)option(String(i*90)+" degrees",i);
+#endif
+  break;
  case VALUE_LAYOUT:{dropdownTitle="Value layout";auto prefs=meter_values::snapshot();current=int(prefs.presets[meter_display::count()-1]);const char *names[]={"Solo / 1 meter","Equal / 2 or 3 meters","1 large + 1 small","1 large + 2 small","2 large + 1 small","Grid / 4 meters"};for(int i=0;i<6;++i)option(names[i],i);break;}
  case SCOPE_CHANNEL:dropdownTitle="Display channel";current=scopeChannels[meter_ble::activeSlot()]+1;option("Auto / current channel",-1);for(unsigned i=0;i<8;++i)option(String("Channel ")+String(i+1),i);break;
  case FORMAT_CHANNEL:dropdownTitle="Format channel";channels(formatChannel);break;
@@ -413,7 +422,14 @@ void chooseOption(unsigned visibleIndex){
  const int returnView=dropdownReturn;dropdownReturn=-1;closeDropdown();dropdownReturn=returnView;
  if(target==SCOPE_METER||target==BT_SLOT)meter_ble::focus(value);
  else if(target==DISPLAY_COUNT)meter_display::requestCount(value);
- else if(target==SCREEN_ROTATION){if(meter_calibration::active())message("Finish touch calibration before rotating");else if(!meter_display::requestRotation(unsigned(value)))message("Screen rotation request unavailable");else message("Screen rotation requested; check saved status");}
+ else if(target==SCREEN_ROTATION){
+  if(meter_calibration::active())message("Finish touch calibration before rotating");
+#ifdef UT_METER_LCD349
+  else if(value==4){meter_board::setAutoRotation(true);message("Automatic IMU rotation requested; hold upright and steady");}
+#endif
+  else if(!meter_display::requestRotation(unsigned(value)))message("Screen rotation request unavailable");
+  else message("Manual rotation requested; check saved status");
+ }
  else if(target==VALUE_LAYOUT){if(meter_values::requestNativeLayout(meter_ui::ValuePreset(value))){dropdownReturn=1;}else message("Layout request unavailable");}
  else if(target==SCOPE_CHANNEL){scopeChannels[meter_ble::activeSlot()]=value;if(value>=0)meter_ble::selectChannel(meter_ble::activeSlot(),value);}
  else if(target==FORMAT_SLOT||target==FORMAT_CHANNEL){selectFormatContext(target==FORMAT_SLOT?unsigned(value):formatSlot,target==FORMAT_CHANNEL?unsigned(value):formatChannel);message(formatDirty?"Unsaved preview restored for this meter/channel":"Number format selected; changes need Save");}
@@ -532,7 +548,14 @@ void execute(int action){
     }
 }
 
-String rotationDetail(){return String(meter_display::rotation()*90)+" degrees / "+(meter_display::rotationSaved()?"saved":"RAM / waiting to save");}
+String rotationDetail(){
+#ifdef UT_METER_LCD349
+    if(meter_board::autoRotation())return String("Automatic (IMU) / ")+String(meter_display::rotation()*90)+" degrees";
+    return String("Manual / ")+String(meter_display::rotation()*90)+" degrees / "+(meter_display::rotationSaved()?"saved":"RAM / waiting to save");
+#else
+    return String(meter_display::rotation()*90)+" degrees / "+(meter_display::rotationSaved()?"saved":"RAM / waiting to save");
+#endif
+}
 void buildRows(){
     rows.clear();JsonObjectConst rec=statusDoc["recording"].as<JsonObjectConst>(),net=statusDoc["network"].as<JsonObjectConst>(),card=statusDoc["storage"].as<JsonObjectConst>();
     const bool freshStatus=statusFresh();
@@ -925,6 +948,7 @@ void close(){
     formatConfirmation="";confirmKind=0;page=Page::Home;scroll=0;
 }
 bool isOpen(){return active.load();}
+bool autoRotationBlocked(){return blocksAutoRotation(isOpen(),page==Page::Keyboard,page==Page::Confirm,dropdown.isOpen());}
 const char *pageName(){switch(page){case Page::Home:return "Functions";case Page::Quick:return "Value controls";case Page::Screen:return "Screen controls";case Page::Network:return "Wi-Fi";case Page::Recording:return "Recording";case Page::Card:return "TF card";case Page::File:return "TF file";case Page::Rules:return "Triggers";case Page::Rule:return "Trigger form";case Page::Calculations:return "Power / battery";case Page::CalcSettings:return "Calculation setup";case Page::Scope:return "Scope controls";case Page::Values:return "Values / Format";case Page::Events:return "Events";case Page::Diagnostics:return "Diagnostics";case Page::Help:return "Help";case Page::Web:return "Open web";case Page::Text:return "Details";case Page::Qr:return "QR link";case Page::Confirm:return "Confirm";case Page::Keyboard:return "Keyboard";case Page::Connections:return "Meters / Bluetooth";case Page::Time:return "Date / Time / NTP";}return "Functions";}
 void draw(DeskPanel &panel){
     redraw=false;

@@ -13,6 +13,9 @@ These PNGs show the project UI. They are documentation illustrations, not proof 
 | `web-phone.png` | Current production browser UI at phone size, using synthetic demonstration data. |
 | `web-calculations.png` | Current production browser calculator, using fixture voltage/current values. |
 
+The native images above are JC captures, so the LCD 3.49-specific IMU controls
+are not shown. Follow the current [rotation/alignment steps](../USER_GUIDE.md#lcd-349-automatic-rotation-and-alignment) and [3.49 guide](../WAVESHARE_LCD349.md).
+
 Native captures were retained from development; the corresponding view design is unchanged by the later touch-decoder correction. A framebuffer capture does not independently measure physical panel visibility or touch accuracy. No real Wi-Fi join QR codes, passwords, measurement sessions or private flash backups are included.
 
 Regenerate browser examples with `METER_TEST_SCREENSHOT_DIR` set to an output directory, then run `node test/web_meter/visual_layout_browser.cjs`. The extra `docs-calculations` capture is produced by that test. Keep demo-data captions next to any reused image.

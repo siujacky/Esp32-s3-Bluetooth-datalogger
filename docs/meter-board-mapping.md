@@ -23,8 +23,7 @@ flash/PSRAM interface, partitions, library implementation or panel init sequence
 | `ut_meter_mapped` | Required `METER_BOARD_PROFILE` path | One implemented pair above | Validated custom profile |
 
 The AMOLED target is Waveshare ESP32-S3-Touch-AMOLED-1.75, **not 1.75C**. The
-LCD is Waveshare ESP32-S3-Touch-LCD-1.47. Profiles have no PCB revision field;
-confirm the actual revision and schematic rather than assuming pins from the
+LCD is Waveshare ESP32-S3-Touch-LCD-1.47. LCD 3.49 has separate V1 and V2 / Rev1.1 profile IDs; other profiles have no separate PCB revision field. Confirm the actual revision and schematic rather than assuming pins from the
 ESP32 generation or display size.
 
 JC touch is SDA4/SCL8 at `0x3B`, with reset/IRQ `-1`. TF is independent SPI3:
@@ -104,7 +103,7 @@ View fields are `rotation` 0–3, `reference_width`, `reference_height`,
 `safe_circle`, and `safe_margin`. Rotations 1/3 swap native width/height. JC's
 320×480 native buffer therefore gives a 480×320 canvas at rotation 1.
 Coordinates scale from each view's reference canvas. Runtime Screen rotation
-0/90/180/270 reflows that baseline map; it is a separate saved preference.
+0/90/180/270 reflows that baseline map; it is a separate saved preference. On LCD 3.49, Automatic (IMU) applies transient orientation, and IMU ALIGNMENT stores a separate 0/90/180/270-degree mounting correction in NVS. Alignment is a user setting rather than a board JSON field; it does not alter manual angles, touch normalization or the physical calibration namespace.
 
 Rectangles are `x,y,w,h`; labels are `x,y,size,align` with -1/0/1 alignment.
 Optional label `size: 0` hides it; required fonts must be positive. Rows separate
@@ -137,14 +136,18 @@ that transform. Controller dimension/offset limits are listed in
 
 ## Calibration and identity
 
-AXS raw coordinates map through affine calibration into the compiled reading
+JC AXS raw coordinates map through affine calibration into the compiled reading
 baseline, then transform into runtime rotation 0–3. Other supplied drivers use
 native-axis normalization followed by GFX rotation. Application handlers consume
 already transformed coordinates. The JC release decoder accepts uniform
 eight-byte `0x23` and `0x63` idle markers, zero contact and explicit release;
 corrupt/mixed frames are not releases.
 
-AXS uses a 64-byte dimension/version/CRC-checked calibration record. Save writes
+LCD 3.49 has a dedicated AXS decoder and accepts the observed uniform 32-byte
+`F9` idle marker; mixed frames are rejected. It uses vendor-axis normalization
+and GFX rotation rather than the JC affine wizard.
+
+JC AXS uses a 64-byte dimension/version/CRC-checked calibration record. Save writes
 and verifies the inactive NVS bank before selecting it. The physical-map
 fingerprint (display, touch, compiled reading rotation) chooses the calibration
 namespace; exact canonical JC hardware retains `meter-touch`. UI-only changes
@@ -167,7 +170,9 @@ python test/test_meter_overlay/run_mapped_tests.py
 python test/test_meter_orientation/run_host.py
 python test/test_meter_native_swipe/run_host.py
 pio test -e native
-pio run -e ut_meter_jc3248w535 -e ut_meter_lcd147 -e ut_meter_amoled175
+python tools/esp32/test_waveshare349.py
+python tools/esp32/test_sdmmc_storage.py
+pio run -e ut_meter_jc3248w535 -e ut_meter_lcd147 -e ut_meter_amoled175 -e ut_meter_lcd349_v1 -e ut_meter_lcd349_v2
 ```
 
 Use `python3` where needed. Geometry runners need host `g++`. They check the
@@ -176,8 +181,12 @@ add resolved-layout test cases for a contribution. The 800×480 fixture proves
 layout scaling, not controller or physical 800×480 support. These commands do
 not upload firmware or test a physical screen.
 
-JC has physical display/touch evidence. The other display targets' source/build
-and geometry coverage does not establish physical visibility/touch. Earlier
+JC has physical display/touch evidence. LCD 3.49 V2 has RTC/IMU, automatic
+rotation and alignment persistence checks plus user confirmation of visible
+rotation; its complete corner/edge and six-orientation checks remain pending.
+See [3.49 evidence](WAVESHARE_LCD349.md#evidence-and-physical-acceptance). Other
+targets' source/build and geometry coverage does not establish equivalent
+physical qualification. Earlier
 UT60BT + UT202BT simultaneous streaming was exercised; four simultaneous real
 RF links and new physical meter frames for the current release remain pending.
 Use [the port acceptance checklist](PORTING.md#port-acceptance-and-contribution)

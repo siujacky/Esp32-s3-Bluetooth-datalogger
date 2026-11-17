@@ -134,7 +134,9 @@ and `touch status` expose peripheral and packet diagnostics.
 Version **v0.2.2** adds the Automatic (IMU) screen-rotation choice and allows
 rotation in normal menus. On V2, selecting Automatic saved the setting and
 changed the live orientation from 0 to 180 degrees with Diagnostics still open,
-using real IMU gravity samples. Physical direction confirmation remains pending.
+using real IMU gravity samples. The user subsequently confirmed visible
+automatic rotation and reported a 90-degree mounting offset, motivating the
+alignment control below.
 
 Version **v0.2.3** adds adjustable IMU alignment. On V2, all four UI choices
 were saved and read back with automatic mode still enabled. A 270-degree
@@ -142,8 +144,9 @@ correction and valid RTC UTC survived an MCU restart. Zero correction was then
 restored so the user could select the mounting correction on the touchscreen.
 Host checks cover all four corrections in all four gravity directions.
 
-These checks do not prove physical display visibility, finger tracking at every
-edge, IMU mounting axes, complete RTC power-loss retention/drift, V1 hardware
+User confirmation establishes visible rotation response on that V2 board.
+It does not qualify finger tracking at every edge, all IMU mounting orientations,
+complete RTC power-loss retention/drift, V1 hardware
 behavior or TF electrical reliability. Validate the
 matching PCB using visible test colors, corner/edge touches, UTC set/reboot with
 Wi-Fi off, RTC power-loss detection, six IMU orientations and recording/download

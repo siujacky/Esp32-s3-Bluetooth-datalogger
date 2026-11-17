@@ -2,7 +2,9 @@
 
 See the [user guide](USER_GUIDE.md) for connection/setup and the
 [porting manual](PORTING.md) for display-board support. Meter protocol support
-and display-board qualification are separate.
+and display-board qualification are separate. LCD 3.49 RTC, IMU and alignment
+checks are recorded in its [board guide](WAVESHARE_LCD349.md); they do not add
+physical BLE verification for any meter profile.
 
 The ESP32-S3 meter firmware uses `lib/dmm_protocols`, a fixed-buffer C++ port of [dmm-tools](https://github.com/antoinecellerier/dmm-tools) at revision `2d4dc507dbd6fa33b05b0241b368572f0ca15745` (retrieved 2026-11-09). The model list and upstream status below come from its [supported-devices document at that revision](https://github.com/antoinecellerier/dmm-tools/blob/2d4dc507dbd6fa33b05b0241b368572f0ca15745/docs/supported-devices.md).
 

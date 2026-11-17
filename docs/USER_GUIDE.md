@@ -1,16 +1,16 @@
 # Meter Workbench User Guide
 
-Use an ESP32-S3 touchscreen as a standalone Bluetooth LE multimeter display and datalogger, with a local dashboard for your phone or computer. This guide covers the firmware in [release v0.1.0](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.1.0).
+Use an ESP32-S3 touchscreen as a standalone Bluetooth LE multimeter display and datalogger, with a local dashboard for your phone or computer. This guide covers the current source and identifies board-specific controls. LCD 3.49 V1/V2 packages are in [v0.2.3](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.2.3); the other three board packages remain in [v0.1.0](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.1.0).
 
 [First reading](#your-first-reading) · [Touch controls](#touch-controls) · [Wi-Fi and browser](#wi-fi-and-the-browser-dashboard) · [Recording](#recording-and-downloads) · [Calculations](#power-and-battery-calculations) · [HTTP triggers](#http-triggers) · [Troubleshooting](#troubleshooting)
 
 ## Install the matching firmware
 
-Choose the exact board in the [board table](../README.md#choose-your-board), then download its `BOARD-v0.1.0.zip` package from the [release page](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/tag/v0.1.0). Extract the ZIP and read **INSTALL.md** before flashing. It includes the required binaries, offsets and commands for that board.
+Choose the exact board in the [board table](../README.md#choose-your-board), then download its versioned ZIP using that table. For Waveshare LCD 3.49, choose **V2** for **Rev1.1** on the PCB or **V2** on the case QC label; the original revision needs **V1**. See the [3.49 guide](WAVESHARE_LCD349.md) for its different reset/backlight wiring. Extract the ZIP and read **INSTALL.md** before flashing. It includes the required binaries, offsets and commands for that board.
 
-Use the full installation procedure for a fresh board. Use an app-only upgrade only when the existing installation has a compatible partition layout; that procedure preserves the partition table and NVS containing device settings. Do not treat an application `.bin` as a complete fresh-install image. Keep a backup of existing firmware and settings before replacement.
+Use the full installation procedure for a fresh board. Use an app-only upgrade only when the existing installation has a compatible partition layout and app0 at `0x10000` is the active boot-selected application with sufficient capacity; that procedure preserves the partition table and NVS containing device settings. Do not treat an application `.bin` as a complete fresh-install image. Keep a backup of existing firmware and settings before replacement.
 
-To build instead, install PlatformIO with `python -m pip install platformio` and run `pio run -e ut_meter_jc3248w535`, `pio run -e ut_meter_amoled175` or `pio run -e ut_meter_lcd147` for the matching board. See [PORTING.md](PORTING.md) for custom mappings and `ut_meter_mapped`.
+To build instead, install PlatformIO with `python -m pip install platformio` and run `pio run -e ut_meter_jc3248w535`, `pio run -e ut_meter_amoled175`, `pio run -e ut_meter_lcd147`, `pio run -e ut_meter_lcd349_v1` or `pio run -e ut_meter_lcd349_v2` for the matching board. See [PORTING.md](PORTING.md) for custom mappings and `ut_meter_mapped`.
 
 ## Your first reading
 
@@ -66,11 +66,20 @@ These shortcuts apply on the live value and Scope screens. Start near the edge a
 
 *Actual Screen controls menu, opened by a top-edge downward swipe.*
 
-The gesture detector uses a scaled **24–48 pixel start band** and requires at least **48 pixels** of inward travel with the inward motion dominant. Swipes in menus, forms and keyboards keep their scrolling/editing behavior. Physical finger confirmation of the latest edge fix is still pending.
+The gesture detector uses a scaled **24–48 pixel start band** and requires at least **48 pixels** of inward travel with the inward motion dominant. Swipes in menus, forms and keyboards keep their scrolling/editing behavior. Full corner/edge finger checks remain board-specific; the earlier JC edge fix still needs physical finger confirmation.
 
 ### Orientation and dimming
 
-Choose **Screen rotation** in Screen controls or Value controls: **0°, 90°, 180° or 270°**. Values, charts, menus, keyboard and QR pages reflow together. The selected rotation is saved across restart; check the displayed saved state if a save fails. On the JC panel, portrait is 320×480 and landscape is 480×320. The browser's **Network → Device screen → Orientation** control changes the device screen.
+Choose **Screen rotation** in Screen controls or Value controls: **0°, 90°, 180° or 270°**. Values, charts, menus, keyboard and QR pages reflow together. The selected rotation is saved across restart; check the displayed saved state if a save fails. On the JC panel, portrait is 320×480 and landscape is 480×320. The browser's **Network → Device screen → Orientation** control changes the device screen and selects a manual angle.
+
+### LCD 3.49 automatic rotation and alignment
+
+1. Open **Screen controls → Screen rotation → Automatic (IMU)**. The same choice is in Value controls and Diagnostics. The separate **IMU AUTO ROTATION** toggle also enables it.
+2. Hold the screen upright, turn it, release your finger and hold steady for about one second. Normal menus rotate too. Flat, diagonal or rapidly moving readings do not select a new orientation. Touch contact, calibration, text entry, confirmation dialogs and open choice lists pause rotation.
+3. If the text is sideways, open **IMU ALIGNMENT** beside Screen rotation. Select **90 degrees clockwise** or **90 degrees counterclockwise** to turn the displayed text upright. **0 degrees (none)** and **180 degrees** are also available. Close the choice list and hold upright/steady again.
+4. Check the row's **saved** state. Alignment survives restart, changes only IMU-driven orientation and keeps automatic mode enabled. A failed write stays in RAM and is reported as not saved; choose it again to retry.
+
+Selecting a manual 0°/90°/180°/270° angle disables automatic mode. Choose **Automatic (IMU)** again to resume it; the saved alignment is retained. Motion changes the live orientation without writing flash on every turn. See the [board guide](WAVESHARE_LCD349.md#imu-and-automatic-rotation) for the sensor policy and diagnostics.
 
 **Auto dim** defaults on. After two minutes without touch, brightness falls from 55% to 10%. The **first touch while dimmed only wakes the display**; lift and touch again to use a control. Calibration stays bright. BLE, Wi-Fi, calculations and recording continue while dimmed. Battery runtime savings have not been measured.
 
@@ -133,7 +142,7 @@ Choose your recording destination deliberately:
 | Destination | Collection | Where data lives | Export |
 |---|---|---|---|
 | Browser sessions | Dashboard must remain open and collecting | IndexedDB for that browser/profile and dashboard address | **Sessions → CSV / JSON** |
-| TF card, supported JC mapping | Device continues after the browser closes, while recording and storage are working | Files on the mounted card | **Sessions → TF card → Download CSV**; native file menu offers a download QR |
+| TF card, JC3248W535 or LCD 3.49 mapping | Device continues after the browser closes, while recording and storage are working | Files on the mounted card | **Sessions → TF card → Download CSV**; native file menu offers a download QR |
 | Device RAM feed | Short reconnect backlog only; bounded and volatile | ESP32 RAM | Feeds the dashboard; not durable storage |
 
 ### Record a session
@@ -147,7 +156,7 @@ Choose your recording destination deliberately:
 
 Browser recordings belong to the browser/profile **and URL** used to open the dashboard. An AP address and a LAN address can have different browser storage. Export before clearing site data. JSON exports include session and gap metadata; CSV contains readings and events.
 
-TF files use `/meter-logs/meter-<boot-id>-<session-counter>.csv` and are not overwritten by later sessions. Active-file downloads take a fixed-length snapshot; recording can add later samples afterward. CSV downloads are routed to a separate local HTTP server on port **81**, so that port must also be reachable. The other supplied board mappings report TF storage unsupported and keep browser logging available.
+TF files use `/meter-logs/meter-<boot-id>-<session-counter>.csv` and are not overwritten by later sessions. Active-file downloads take a fixed-length snapshot; recording can add later samples afterward. CSV downloads are routed to a separate local HTTP server on port **81**, so that port must also be reachable. JC uses independent SPI3; LCD 3.49 V1/V2 use one-bit SDMMC. The AMOLED 1.75 and LCD 1.47 mappings report TF unsupported and keep browser logging available.
 
 The RAM backlog is bounded (2048 records with PSRAM, 256 fallback). Long outages, closed tabs, write failures and power loss can leave gaps or an unfinished recording tail. Gaps are reported rather than filled with invented values. A successful software flush/sync does not eliminate power-loss risk.
 
@@ -229,13 +238,19 @@ Read `GET /api/rules` for saved configuration and delivery results. `POST /api/r
 
 HTTPS verifies server certificates using the build's CA bundle or the optional `caPem` PEM certificate and requires a synchronized clock. Requests have bounded queues/timeouts and do not follow redirects or automatically retry. Inspect the last HTTP code/result and device events. An HTTP 2xx response is the delivery criterion; response bodies are not retained.
 
-The local API has same-origin browser checks and no account login. Use it on a trusted local network. The complete offline reference at `/readme.html` also describes status, control, frames, recording, storage and Wi-Fi endpoints. A [downloadable HTML copy](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/download/v0.1.0/README.html) is included with the release.
+The local API has same-origin browser checks and no account login. Use it on a trusted local network. The complete offline reference at `/readme.html` also describes status, control, frames, recording, storage and Wi-Fi endpoints. A [downloadable HTML copy](https://github.com/siujacky/Esp32-s3-Bluetooth-datalogger/releases/download/v0.2.3/README.html) is included with the release.
 
 ## Date, time and NTP
 
 Open **Functions → Date / Time / NTP** or browser **Network → Date / time**. Choose automatic NTP, a preset server or custom hostname/IPv4 address, press **Save settings**, check saved status, then **Sync NTP now**. Enter a hostname/address without `http://` or a port.
 
-NTP stores **UTC**. Internet servers need working station Wi-Fi; a reachable numeric local NTP server can work on the device AP subnet. Browser clock synchronization remains a fallback. Check the reported clock source and successful sync time; accepting a request does not prove an NTP response. Logs retain uptime when UTC is unavailable. HTTPS needs a valid synchronized device clock.
+NTP stores **UTC**. Internet servers need working station Wi-Fi; a reachable numeric local NTP server can work on the device AP subnet. Browser clock synchronization remains a fallback. Check the reported clock source and successful sync time; accepting a request does not prove an NTP response. Logs retain uptime when UTC is unavailable. HTTPS needs a valid UTC device clock.
+
+### LCD 3.49 hardware RTC
+
+The PCF85063 restores UTC after boot when its calendar is valid and its oscillator-stop flag is clear. NTP/browser/manual clock updates are written to the RTC and read back by the main loop. Open **Functions → Diagnostics** for RTC validity and live IMU values; **UNIX MILLISECONDS → SET DEVICE CLOCK** accepts a manual UTC value. `GET /api/status` exposes clock state under `clock` and RTC/IMU details under `boardDevices`.
+
+An MCU restart preserves time while the RTC remains powered. Complete loss of RTC power can invalidate time; set UTC again from a valid source. An RTC restore is separate from a successful network NTP synchronization. The firmware does not substitute its compilation date for a lost clock.
 
 ## Troubleshooting
 
@@ -244,7 +259,10 @@ NTP stores **UTC**. Internet servers need working station Wi-Fi; a reachable num
 | No meter discovered | Enable BLE, close competing meter apps, scan again and check the exact address. A generic adapter name needs the correct explicit profile. |
 | Connected but STALE | Verify the profile and wait for valid packets. Link state alone does not prove live readings. Disconnect stops retries; Connect starts them again. |
 | Edge swipe does not open a menu | Begin within the edge area, swipe deliberately inward for at least 48 pixels, then lift. Wake a dimmed screen first. The latest physical edge fix still needs finger confirmation. |
-| Touch position is wrong | Reopen Touch calibration in Diagnostics or browser Network. Hold until green and lift between targets. |
+| JC touch position is wrong | Reopen Touch calibration in Diagnostics or browser Network. Hold until green and lift between targets. |
+| LCD 3.49 never rotates automatically | Select **Screen rotation → Automatic (IMU)**; a manual angle turns it off. Hold upright/steady and release your finger. Close text keyboards, confirmations and choice lists. |
+| LCD 3.49 automatic rotation is 90° off | Set **IMU ALIGNMENT** to 90° clockwise or counterclockwise; check **saved**. This corrects automatic orientation without disabling it. |
+| LCD 3.49 RTC is unset | Set valid UTC using NTP, browser time or Diagnostics. Check RTC validity and its power source; an unpowered RTC cannot retain time. |
 | A setting reverts after restart | Check its saved/readback state. Browser preferences are separate from native device settings. |
 | Dashboard will not open | Stay on the device AP despite “no internet”, and use the displayed HTTP address. From a LAN use its station address. |
 | QR will not scan | Keep the white border visible and reduce glare. Join manually with displayed credentials or use the browser's larger QR. |
@@ -259,7 +277,7 @@ For USB Serial/JTAG diagnostics the monitor speed is 115200. A Python serial cli
 
 ## Validation and known limits
 
-The release source includes the JC touch release fix (`0x63`) and the scaled 24–48 pixel edge start band. The touch-corrected development application was flashed to the **JC3248W535 only**. Physical finger confirmation of edge navigation is pending. The publication release was rebuilt with updated embedded help and has not been flashed. Other supplied board targets have build verification, not current-release hardware testing.
+The release source includes the JC touch release fix (`0x63`) and the scaled 24–48 pixel edge start band. The earlier touch-corrected development application was flashed to the **JC3248W535**; physical finger confirmation of that edge fix is pending. LCD 3.49 **V2 / Rev1.1** firmware v0.2.3 was also flashed and independently verified. Live checks covered RTC write/readback/MCU restart, IMU samples, automatic orientation and all four alignment choices; the saved offset survived restart. The user confirmed visible automatic rotation, with a mounting offset that can now be adjusted. Full corner/edge touch checks, six-position IMU acceptance, RTC power-loss retention/drift, V1 hardware, AMOLED hardware and TF electrical reliability remain separate checks. See the [board evidence](WAVESHARE_LCD349.md#evidence-and-physical-acceptance).
 
 Earlier JC firmware checks received simultaneous real UT60BT and UT202BT readings. A roughly 60-second observation after reboot reported both streams connected/fresh with advancing packet counters and simulation disabled. This is earlier hardware evidence, separate from the publication rebuild. Software fixtures cover 1–4 meter layouts, mixed units, gaps, storage workflows and calculations. Four simultaneous physical BLE links, every selectable profile, a full battery discharge cycle and physical card recording/download/format reliability remain separate validation work. The current JC card mounting successfully does not establish those storage operations.
 

@@ -34,10 +34,10 @@ flowchart TD
 | Compiler | `tools/esp32/meter_board_config.py` | Inheritance, strict schema, electrical/resource checks, backend limits, resolved JSON, identity and generated header. |
 | Layout validation | `tools/esp32/meter_ui_validation.py` | Check reference geometry at the actual rotated dimensions, text areas, safe circles and keyboard packing. |
 | Build adapter | `tools/esp32/meter_board_build.py` | Choose a profile, validate it and force-include `.pio/build/<environment>/meter_board_config.h`. The header fingerprint participates in compiler command signatures. |
-| Hardware interface | `src/esp32_touch/panel.h` and the three backend sources below | `DeskPanel` owns a native RGB565 `GFXcanvas16`, controller initialization, transfer, brightness and touch reporting. |
+| Hardware interface | `src/esp32_touch/panel.h` and the four display backend sources below | `DeskPanel` owns a native RGB565 `GFXcanvas16`, controller initialization, transfer, brightness and touch reporting. |
 | Portable UI | `lib/meter_ui/src/`, `lib/ut_meter/ut_touch.*` | Resolve the same rectangles for drawing and hits, orientation, values/charts, lists, keyboards and gestures. |
 | Application | `src/esp32_touch/meter/main.cpp`, `meter_touch_app.*` | Actions and state. A pin/layout-only port does not copy or fork this application. |
-| Storage | `src/esp32_touch/meter/meter_storage.cpp` | Optional independent SPI3 TF worker; display bus ownership remains separate. |
+| Storage | `src/esp32_touch/meter/meter_storage.cpp` | Optional independent SPI3 or one-bit SDMMC TF worker; display bus ownership remains separate. |
 
 ### Choose the right path
 
@@ -74,7 +74,7 @@ different board with a similar name.
 | Display | Full controller and panel-module identity; SPI/QSPI mode, CS, SCK, data lines, DC if used, reset polarity/timing, backlight or internal brightness, native active width/height, GRAM offsets and supported clock. |
 | Touch | Full controller identity, I2C address, SDA/SCL, pull-ups, reset/IRQ polarity, packet format, release behavior, native coordinate range and raw axis direction. |
 | Other I2C devices | Shared-bus PMIC/address, required power setup and address collisions. The existing AMOLED PMIC check is an identity/presence check, not a general PMIC configuration driver. |
-| Optional TF card | Separate SPI3 CS/MOSI/SCK/MISO, pull-ups, card supply and clock; list any display/touch/TF pin overlaps. |
+| Optional TF card | Backend (`sd_spi` or `sdmmc_1bit`), separate CS/MOSI/SCK/MISO or CLK/CMD/D0 wiring, pull-ups, card supply and clock; list any display/touch/TF pin overlaps. |
 | Other board wiring | USB, flash/PSRAM, boot straps, UART, LEDs, buttons and every onboard peripheral already connected to a selected GPIO. |
 | Evidence and rollback | Original firmware/backup, recovery method, port used, tested board identity, firmware hash and a record of each physical check. |
 
@@ -93,7 +93,7 @@ be `-1`.
 
 ## Canonical hardware profiles
 
-All three named targets currently extend the same ESP32-S3 N16R8 configuration:
+All five named targets currently extend the same ESP32-S3 N16R8 configuration:
 `espressif32@6.12.0`, Arduino, `esp32-s3-devkitc-1`, 16 MB flash with
 `default_16MB.csv`, QIO flash, OPI PSRAM and `qio_opi` memory. Native USB CDC is
 enabled and NimBLE is configured for four connections/bonds. Check
@@ -106,7 +106,8 @@ enabled and NimBLE is configured for four connections/bonds. Check
 | [`lcd147.json`](../boards/meter/lcd147.json) / `ut_meter_lcd147` | Waveshare ESP32-S3-Touch-LCD-1.47; backend cites official `03_lvgl_arduino_v8` demo downloaded 2026-10-10. | `jd9853_spi` / `axs5106l` | 172×320; 34,0 | 1 / 0 / 0: 320×172 reading, 172×320 setup/functions |
 | [`lcd349_v1.json`](../boards/meter/lcd349_v1.json), [`lcd349_v2.json`](../boards/meter/lcd349_v2.json) / `ut_meter_lcd349_v1`, `ut_meter_lcd349_v2` | Waveshare ESP32-S3-Touch-LCD-3.49, exact revision; [wiring and peripherals](WAVESHARE_LCD349.md). | `axs15231b_349_qspi` / `axs15231b_349` | 172×640; 0,0 | 1 / 0 / 0: 640×172 reading, 172×640 setup/functions |
 
-The JSON files do not record PCB revision numbers. These are exact model/source
+The two LCD 3.49 profile IDs explicitly select V1 or V2 / Rev1.1. Other
+profiles have no separate PCB-revision field. These are exact model/source
 references, not a claim that every revision of each product has identical
 wiring. Confirm your board's revision against its schematic; do not substitute
 1.75C or another size/revision by name alone.
@@ -294,7 +295,9 @@ rotation. For native dimensions W×H, normalized native x,y become:
 | 2 | W−1−x,H−1−y | W×H |
 | 3 | H−1−y,x | H×W |
 
-AXS15231B uses `jc3248::decodeTouch()` and its affine calibration path. The
+The JC3248W535 AXS15231B uses `jc3248::decodeTouch()` and its affine calibration path. The LCD 3.49 uses a separate `waveshare349::decodeTouch()` path: normalize vendor axes `(rawY, 639-rawX)` and apply GFX rotation. Its exact uniform 32-byte `F9` idle packet is finger-up; mixed/corrupt frames remain errors. It does not use the JC calibration wizard.
+
+The
 calibration maps **raw controller coordinates** into the compiled reading
 rotation's baseline canvas. `jc3248::transformTouch()` then converts that
 calibrated point from the baseline to the current runtime rotation 0–3. Saving
@@ -356,7 +359,7 @@ other supplied touch paths use their configured normalization. A new driver
 does not gain the wizard merely by defining JSON touch fields.
 
 View count, overlay, auto-dim and runtime rotation use the separate `meter-view`
-NVS namespace. Its rotation is read back before being marked saved. Test both
+NVS namespace. Its rotation is read back before being marked saved. LCD 3.49 automatic mode and alignment use the separate `meter-sensors` namespace (`auto-rotate`, `imu-offset`). The main loop alone owns auxiliary I2C and queued setting writes; it verifies NVS readback before marking an alignment saved. The alignment is a runtime quarter-turn correction, not a JSON pin/layout field. Apply it only to IMU suggestions; preserve the touch and manual-rotation transforms and avoid per-motion flash writes. Test both
 reported saved state and a real restart. Do not erase all NVS as a routine
 porting step: it also holds user Wi-Fi, pairing and application settings.
 
@@ -373,9 +376,9 @@ requires a reviewed implementation at the following interfaces:
    byte order, brightness and touch release semantics for the actual module.
 2. **Select exactly one implementation.** Today
    `src/esp32_touch/meter/panel_jc3248.cpp` is guarded by `UT_METER_JC3248`,
-   `panel_amoled.cpp` by `UT_METER_AMOLED`, and
-   `src/esp32_touch/panel.cpp` is the JD9853/AXS5106L fallback when neither is
-   defined. Extend guards deliberately so an unknown/new backend cannot compile
+   `panel_amoled.cpp` by `UT_METER_AMOLED`, and `panel_lcd349.cpp` by
+   `UT_METER_LCD349`. `src/esp32_touch/panel.cpp` is the JD9853/AXS5106L
+   fallback only when none of those flags is defined. Extend guards deliberately so an unknown/new backend cannot compile
    through that fallback or create duplicate `DeskPanel` definitions. Include
    the new source in the PlatformIO source filter if its location requires it.
 3. **Extend the compiler.** Add the backend/touch pair and generated selection
@@ -425,6 +428,8 @@ python test/test_meter_ui/run_mapped_tests.py
 python test/test_meter_overlay/run_mapped_tests.py
 python test/test_meter_orientation/run_host.py
 python test/test_meter_native_swipe/run_host.py
+python tools/esp32/test_waveshare349.py
+python tools/esp32/test_sdmmc_storage.py
 pio test -e native
 ```
 
@@ -448,7 +453,7 @@ Build your mapped profile as above. For a driver/platform change, also build the
 existing regression targets:
 
 ```sh
-pio run -e ut_meter_jc3248w535 -e ut_meter_amoled175 -e ut_meter_lcd147
+pio run -e ut_meter_jc3248w535 -e ut_meter_amoled175 -e ut_meter_lcd147 -e ut_meter_lcd349_v1 -e ut_meter_lcd349_v2
 ```
 
 These commands compile firmware and do not upload it. Retain the selected JSON,
@@ -496,10 +501,12 @@ Confirm earlier files remain readable and unchanged. Include restart/remount
 and read/write error handling. Do not format or delete existing data as a port
 test; formatting is a separate destructive user action.
 
-The current publication has physical JC3248W535 display/touch evidence and
-earlier real UT60BT + UT202BT simultaneous streaming/restart evidence. The other
-two display targets have source/build/portable geometry coverage, which is not
-physical display qualification. The current release has no fresh physical meter
+The repository retains physical JC3248W535 display/touch evidence and
+earlier real UT60BT + UT202BT simultaneous streaming/restart evidence. LCD 3.49
+V2 additionally has verified firmware flash, RTC/IMU, automatic-rotation and
+alignment-save/restart checks, plus user confirmation that visible rotation
+responds. V1 and AMOLED source/build/geometry coverage is not equivalent
+physical qualification; see the [3.49 evidence](WAVESHARE_LCD349.md#evidence-and-physical-acceptance). The current release has no fresh physical meter
 frames establishing a new RF test, and four simultaneous real BLE links remain
 pending. New-board electrical, visible-panel and touch behavior require their
 own evidence.
